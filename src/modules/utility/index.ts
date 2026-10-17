@@ -1,7 +1,11 @@
 import type { DependencyContainer } from "tsyringe";
 import { CommandRegistry } from "../../core/commands/CommandRegistry.ts";
 import { PingCommand } from "./commands/PingCommand.ts";
+import { JoinGameJam } from "./commands/JoinGameJam.ts";
+import { LeaveGameJam } from "./commands/LeaveGameJam.ts";
 
 export function registerUtilityModule(container: DependencyContainer): void {
   container.resolve(CommandRegistry).register(container.resolve(PingCommand));
+  container.resolve(CommandRegistry).register(container.resolve(JoinGameJam));
+  container.resolve(CommandRegistry).register(container.resolve(LeaveGameJam));
 }
