@@ -17,9 +17,17 @@ Only `src/config/Config.ts` reads environment variables at runtime. Required val
 
 The shared `DatabaseService` exposes its Drizzle client as `db`. Inject it into a feature service through its constructor, then use `database.db` for queries. `src/infrastructure/database/schema.ts` includes a small `guildSettings` example with a guild ID, an optional log channel ID, and a creation timestamp. Add and export further tables there; keep feature-specific queries in that feature's service or repository. The example table is not used by a command yet.
 
-After changing the schema, run `bun run db:generate` to create SQL migrations, then `bun run db:migrate` to apply them. Review generated SQL before applying it to a production database.
+After changing the schema, run `bun run db:generate` to create SQL migrations. Review the generated SQL, commit the new files under `drizzle/`, and run `bun run db:migrate` against your development database. Use a separate local or development Turso database; do not put production database credentials in developer `.env` files.
 
 For local development without a Turso account, set `TURSO_DATABASE_URL=file:local.sqlite` and omit `TURSO_AUTH_TOKEN`. For a hosted Turso database, use its `libsql://` URL and token. Local SQLite files are ignored by Git.
+
+## Dokploy deployment
+
+Create an **Application** in Dokploy, select this repository and the production branch, and choose the Dockerfile build type with `./Dockerfile`. In the application's Environment settings, provide `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `TURSO_DATABASE_URL`, and `TURSO_AUTH_TOKEN` for production. The image sets `NODE_ENV=production`. This bot does not serve HTTP, so it needs no domain or published port.
+
+When the container starts, it applies committed Drizzle migrations to the production Turso database before starting the bot. If migration fails, the bot does not start; inspect the application logs before retrying. Drizzle records applied migrations, so a restart checks for new migrations without reapplying completed ones. The image includes `drizzle-kit` and its development dependencies because migration runs inside the bot container.
+
+Run one bot instance with this startup migration approach. For schema changes that remove or rename columns, deploy compatible application code and data changes in stages so any old container continues to work while the migration runs. Back up production data before destructive changes. If the production database already contains tables created outside these Drizzle migrations, reconcile its schema and migration history before the first Dokploy deployment; the initial migration may otherwise try to create an existing table.
 
 ## Structure
 

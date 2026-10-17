@@ -3,3 +3,6 @@
 !bun.lock
 !src/
 !src/**
+!drizzle.config.ts
+!drizzle/
+!drizzle/**
