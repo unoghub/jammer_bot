@@ -5,7 +5,6 @@ export class CooldownManager {
   private readonly expirations = new Map<string, Map<string, number>>();
   private nextSweep = 0;
 
-  /** Returns remaining milliseconds, or zero when the cooldown is acquired. */
   acquire(commandName: string, userId: string, durationMs: number, now = Date.now()): number {
     if (durationMs <= 0) return 0;
     if (now >= this.nextSweep) {

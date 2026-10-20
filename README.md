@@ -1,13 +1,15 @@
 # unogjambot
 
-A modular Discord bot foundation built with TypeScript, Bun, discord.js v14, tsyringe, Valibot, and Pino. It includes `/ping` and `/ban` as examples of the command pipeline and feature based modules.
+A modular Discord bot built with TypeScript, Bun, discord.js v14, tsyringe, Valibot, and Pino. It includes Game Jam participation, team channels, moderation, and the `/ping` and `/ban` example commands.
 
 ## Setup
 
 1. Run `bun install`.
 2. Copy `.env.example` to `.env` and fill in the bot token, application ID, Turso database URL, and auth token. Set `DISCORD_GUILD_ID` for development.
-3. Invite the bot with the `bot` and `applications.commands` scopes. Grant it **Ban Members** for `/ban`, and keep its role above members it should ban.
-4. Run `bun run src/main.ts` or `bun run start`. Use `bun run dev` for watch mode and `bun run typecheck` for strict TypeScript validation.
+3. Invite the bot with the `bot` and `applications.commands` scopes. Grant it **Ban Members** for `/ban`, and keep its role above members it should ban. For Game Jam, grant **Manage Channels**, **Manage Roles**, **Move Members**, **View Channels**, **Send Messages**, **Read Message History**, **Connect**, and **Speak**.
+4. Run `bun run db:migrate` against your development database before starting the bot.
+5. Run `bun run src/main.ts` or `bun run start`. Use `bun run dev` for watch mode, `bun run typecheck` for TypeScript validation, and `bun test` for the local test suite.
+6. Run `/jam-setup participant:<existing role> maintainer:<existing role>` as a server administrator. Keep the bot's role above the participant role.
 
 `NODE_ENV=development` deploys commands to `DISCORD_GUILD_ID` on startup. `NODE_ENV=production` deploys global commands. Guild commands generally become available sooner. Command deployment replaces the commands for the selected scope, so use a dedicated development guild. A deploy failure stops startup before Discord login.
 
@@ -20,6 +22,35 @@ The shared `DatabaseService` exposes its Drizzle client as `db`. Inject it into 
 After changing the schema, run `bun run db:generate` to create SQL migrations. Review the generated SQL, commit the new files under `drizzle/`, and run `bun run db:migrate` against your development database. Use a separate local or development Turso database; do not put production database credentials in developer `.env` files.
 
 For local development without a Turso account, set `TURSO_DATABASE_URL=file:local.sqlite` and omit `TURSO_AUTH_TOKEN`. For a hosted Turso database, use its `libsql://` URL and token. Local SQLite files are ignored by Git.
+
+## Game Jam
+
+Each server has its own jam configuration, participants, blacklist, teams, and memberships. Setup uses two existing shared roles: Jam Participant and Jam Maintainer. It creates the **Game Jam** and **Game Jam Archives** categories and a **jam-teams** text channel. Repeating setup with the same roles is safe; changing the configured roles is not supported.
+
+In addition to the management permissions above, enable the bot's text and voice permissions: View Channels, Read Message History, Send Messages, Send Messages in Threads, Create Public Threads, Create Private Threads, Add Reactions, Attach Files, Embed Links, Send Voice Messages, Send Polls, Connect, Speak, Video, and Use Voice Activity. Setup checks these permissions because Discord only allows the bot to set channel overwrites for permissions it holds. Private thread creation is denied on jam channels so maintainers can see all team discussions.
+
+| Command | Behavior |
+| --- | --- |
+| `/joinjam` | Gives the participant role unless the user is blacklisted. |
+| `/leavejam` | Removes jam participation and the participant role. |
+| `/team create name:<name>` | Creates a team with one private text channel and one private voice channel. |
+| `/team add user:<user> [team:<name>]` | Adds a jam participant to a team and grants both channels' access by user ID. |
+| `/team info` | Shows the caller's team and its channels. |
+| `/team disband [team:<name>]` | Archives the team's existing channels and releases its memberships. |
+| `/jam kick user:<user>` | Removes participation and its role without blacklisting. |
+| `/jam blacklist user:<user>` | Removes participation and its role, and prevents future joins. Administrators are protected. |
+| `/jam unblacklist user:<user>` | Allows the user to join again; it does not automatically rejoin them. |
+| `/jam sync` | Reapplies saved roles, channel permissions, and the team list. |
+
+Team owners manage their own team. Maintainers and administrators can manage another team by supplying its name, including force-disbanding it. Jam moderation and synchronization require the maintainer role or Administrator permission.
+
+Team access uses individual member permission overwrites; the bot never creates a role per team. Maintainers can see every team channel. Disbanding moves both original channels into **Game Jam Archives**, keeps message history, and makes the archive visible to maintainers. The team list contains only active team names, is visible to participants and maintainers, and permits only the bot to post. Discord administrators retain Discord's permission bypass.
+
+Individual team departure, team member removal, and their integration with jam departure and moderation are outside this change. `/leavejam`, `/jam kick`, and `/jam blacklist` currently update jam participation and the participant role only.
+
+Commands delegate to services. `GameJamService` handles participation and moderation; `TeamService` handles teams; `JamAccessService` checks permissions; `JamChannelService` manages Discord channels. `JamRepository` uses the Drizzle schema and query APIs. `JamOperationService` serializes changes within each server and synchronizes pending database changes with Discord. Errors propagate to the existing command runner.
+
+Run one bot instance. Changes pending after a Discord API failure remain in the database and are retried by the next jam operation or `/jam sync`. Tests use an in-memory database with the committed migrations and simulated Discord objects; they do not connect to a server or the configured Turso database.
 
 ## Dokploy deployment
 
@@ -49,6 +80,7 @@ src/
   modules/
     utility/            Ping command
     moderation/         Ban command, administrator guard, service
+    jam/                Participation, teams, permissions, channels, moderation
   main.ts               Startup and signal handling
 ```
 

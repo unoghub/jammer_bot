@@ -21,11 +21,6 @@ export class CommandDeployer {
       ? Routes.applicationGuildCommands(this.config.discordClientId, guildId)
       : Routes.applicationCommands(this.config.discordClientId);
     await rest.put(route, { body: commands });
-    this.logger.info("Slash commands deployed", {
-  count: commands.length,
-  names: commands.map((command) => command.name),
-  scope: guildId ? "guild" : "global",
-  guildId,
-});
+    this.logger.info("Slash commands deployed", { count: commands.length, scope: guildId ? "guild" : "global" });
   }
 }
