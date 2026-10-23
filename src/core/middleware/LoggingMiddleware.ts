@@ -14,7 +14,7 @@ export class LoggingMiddleware implements Middleware {
       await next();
     } finally {
       this.logger.info("Command handled", {
-        command: context.interaction.commandName,
+        command: context.commandName,
         userId: context.user.id,
         durationMs: Date.now() - start,
       });

@@ -5,7 +5,7 @@ import type { Config } from "../../config/Config.ts";
 
 @injectable()
 export class DiscordClient {
-  readonly client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
+  readonly client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildVoiceStates] });
 
   constructor(@inject(TOKENS.Config) private readonly config: Config) {}
 

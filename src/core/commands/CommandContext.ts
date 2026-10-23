@@ -1,6 +1,9 @@
 import type {
   ChatInputCommandInteraction,
   Guild,
+  GuildMember,
+  ModalSubmitInteraction,
+  ModalBuilder,
   InteractionEditReplyOptions,
   InteractionReplyOptions,
   MessagePayload,
@@ -8,12 +11,40 @@ import type {
 import { CommandError } from "../errors/CommandError.ts";
 
 export class CommandContext {
-  constructor(public readonly interaction: ChatInputCommandInteraction) {}
+  private actor?: Promise<GuildMember>;
+
+  constructor(public readonly interaction: ChatInputCommandInteraction | ModalSubmitInteraction) {}
 
   get user() { return this.interaction.user; }
   get guild() { return this.interaction.guild; }
   get member() { return this.interaction.member; }
-  get options() { return this.interaction.options; }
+  get isModalSubmit() { return this.interaction.isModalSubmit(); }
+  get commandName() {
+    return this.interaction.isModalSubmit() ? this.interaction.customId.split(":")[0]! : this.interaction.commandName;
+  }
+  get action() {
+    return this.interaction.isModalSubmit()
+      ? this.interaction.customId.split(":")[1] ?? ""
+      : this.interaction.options.getSubcommand(false) ?? "";
+  }
+  get options() {
+    if (this.interaction.isModalSubmit()) throw new CommandError("Bu etkileşim komut seçenekleri içermiyor.");
+    return this.interaction.options;
+  }
+  get fields() {
+    if (!this.interaction.isModalSubmit()) throw new CommandError("Bu etkileşim form alanları içermiyor.");
+    return this.interaction.fields;
+  }
+
+  getActor(): Promise<GuildMember> {
+    this.actor ??= this.requireGuild().members.fetch({ user: this.user.id, force: true });
+    return this.actor;
+  }
+
+  async showModal(modal: ModalBuilder): Promise<void> {
+    if (this.interaction.isModalSubmit()) throw new CommandError("Form yanıtından yeni form açılamaz.");
+    await this.interaction.showModal(modal);
+  }
 
   requireGuild(): Guild {
     if (!this.guild) {

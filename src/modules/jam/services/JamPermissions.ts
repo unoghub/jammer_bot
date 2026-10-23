@@ -24,6 +24,9 @@ const restrictedPermissions = [
   PermissionFlagsBits.CreatePrivateThreads,
 ];
 
+const activePermissions = [...readPermissions, ...writePermissions];
+const memberPermissions = [...activePermissions, PermissionFlagsBits.AttachFiles, PermissionFlagsBits.EmbedLinks];
+
 export const requiredJamBotPermissions = [
   ...readPermissions,
   ...restrictedPermissions,
@@ -41,7 +44,6 @@ type PermissionOptions = {
 
 export function buildJamPermissions(jam: GameJam, botId: string, options: PermissionOptions = {}): OverwriteData[] {
   const { mode = "active", memberIds = [] } = options;
-  const maintainerPermissions = mode === "active" ? [...readPermissions, ...writePermissions] : readPermissions;
   const overwrites: OverwriteData[] = [
     {
       id: jam.guildId,
@@ -51,12 +53,12 @@ export function buildJamPermissions(jam: GameJam, botId: string, options: Permis
     {
       id: botId,
       type: OverwriteType.Member,
-      allow: [...readPermissions, ...writePermissions],
+      allow: activePermissions,
     },
     {
       id: jam.maintainerRoleId,
       type: OverwriteType.Role,
-      allow: maintainerPermissions,
+      allow: mode === "active" ? activePermissions : readPermissions,
     },
   ];
 
@@ -75,7 +77,7 @@ export function buildJamPermissions(jam: GameJam, botId: string, options: Permis
       overwrites.push({
         id: userId,
         type: OverwriteType.Member,
-        allow: [...readPermissions, ...writePermissions, PermissionFlagsBits.AttachFiles, PermissionFlagsBits.EmbedLinks],
+        allow: memberPermissions,
       });
     }
   }

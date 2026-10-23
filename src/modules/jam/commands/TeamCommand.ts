@@ -1,15 +1,10 @@
-import { SlashCommandBuilder, type SlashCommandSubcommandBuilder } from "discord.js";
+import { ModalBuilder, SlashCommandBuilder } from "discord.js";
 import { injectable } from "tsyringe";
 import { Command } from "../../../core/commands/Command.ts";
 import type { CommandContext } from "../../../core/commands/CommandContext.ts";
+import { textField, userField } from "../../../core/commands/ModalFields.ts";
+import { TeamGuard } from "../guards/TeamGuard.ts";
 import { TeamService } from "../services/TeamService.ts";
-
-function withTeamOption(command: SlashCommandSubcommandBuilder): SlashCommandSubcommandBuilder {
-  return command.addStringOption((option) => option
-    .setName("team")
-    .setDescription("Takım adı; boş bırakırsanız kendi takımınız")
-    .setMaxLength(50));
-}
 
 @injectable()
 export class TeamCommand extends Command {
@@ -17,58 +12,58 @@ export class TeamCommand extends Command {
     .setName("team")
     .setDescription("Game Jam takım işlemleri")
     .setDMPermission(false)
-    .addSubcommand((command) => command
-      .setName("create")
-      .setDescription("Takım ve özel kanallarını oluştur")
-      .addStringOption((option) => option
-        .setName("name")
-        .setDescription("Takım adı")
-        .setMinLength(1)
-        .setMaxLength(50)
-        .setRequired(true)))
-    .addSubcommand((command) => withTeamOption(command
-      .setName("add")
-      .setDescription("Takıma bir jam katılımcısı ekle")
-      .addUserOption((option) => option.setName("user").setDescription("Eklenecek katılımcı").setRequired(true))))
-    .addSubcommand((command) => withTeamOption(command
-      .setName("disband")
-      .setDescription("Takımı dağıt ve kanallarını arşivle")))
+    .addSubcommand((command) => command.setName("create").setDescription("Takım ve özel kanallarını oluştur"))
+    .addSubcommand((command) => command.setName("add").setDescription("Takıma bir jam katılımcısı ekle"))
+    .addSubcommand((command) => command.setName("disband").setDescription("Takımı dağıt ve kanallarını arşivle"))
     .addSubcommand((command) => command.setName("info").setDescription("Takımını ve kanallarını göster"));
 
   override readonly cooldown = 3_000;
+  override readonly modalActions = ["create", "add", "disband"];
+  override readonly guards;
 
-  constructor(private readonly teams: TeamService) {
+  constructor(private readonly teams: TeamService, private readonly teamGuard: TeamGuard) {
     super();
+    this.guards = [teamGuard];
   }
 
   async execute(context: CommandContext): Promise<void> {
-    const guild = context.requireGuild();
-    const actorId = context.user.id;
-    const action = context.options.getSubcommand();
-    await context.defer(true);
+    if (context.action === "info") {
+      await context.defer(true);
+      const team = await this.teams.findTeam(context.requireGuild().id, context.user.id);
+      await context.editReply(`${team.name}: <#${team.textChannelId}> · <#${team.voiceChannelId}>`);
+      return;
+    }
+    const creating = context.action === "create";
+    const title = creating ? "Takım oluştur" : context.action === "add" ? "Takıma üye ekle" : "Takımı arşivle";
+    const modal = new ModalBuilder().setCustomId(`team:${context.action}`).setTitle(title)
+      .addLabelComponents(textField(
+        "team", creating ? "Takım adı" : "Takım adı (boş bırakırsanız kendi takımınız)",
+        { maxLength: 50, required: creating },
+      ));
+    if (context.action === "add") {
+      modal.addLabelComponents(userField("user", "Eklenecek katılımcı"));
+    }
+    await context.showModal(modal);
+  }
 
-    switch (action) {
+  override async executeModal(context: CommandContext): Promise<void> {
+    await context.defer(true);
+    const guild = context.requireGuild();
+    switch (context.action) {
       case "create": {
-        const team = await this.teams.create(guild, actorId, context.options.getString("name", true));
+        const team = await this.teams.create(guild, context.user.id, context.fields.getTextInputValue("team"));
         await context.editReply(`${team.name} oluşturuldu: <#${team.textChannelId}> · <#${team.voiceChannelId}>`);
         return;
       }
-      case "add":
-        await this.teams.addMember(
-          guild, actorId, context.options.getUser("user", true).id,
-          context.options.getString("team") ?? undefined,
-        );
+      case "add": {
+        const user = context.fields.getSelectedUsers("user", true).first()!;
+        await this.teams.addMember(guild, this.teamGuard.teamId(context), user.id);
         await context.editReply("Üye takıma eklendi ve kanal erişimi verildi.");
         return;
-      case "disband":
-        await this.teams.disband(guild, actorId, context.options.getString("team") ?? undefined);
-        await context.editReply("Takım dağıtıldı. Kanalları Game Jam Archives kategorisine taşındı.");
-        return;
-      case "info": {
-        const team = await this.teams.getMemberTeam(guild, actorId);
-        await context.editReply(`${team.name}: <#${team.textChannelId}> · <#${team.voiceChannelId}>`);
-        return;
       }
+      case "disband":
+        await this.teams.disband(guild, this.teamGuard.teamId(context));
+        await context.editReply("Takım dağıtıldı. Kanalları arşiv kategorisine taşındı.");
     }
   }
 }

@@ -6,9 +6,12 @@ import { JoinGameJam } from "./commands/JoinGameJam.ts";
 import { LeaveGameJam } from "./commands/LeaveGameJam.ts";
 import { TeamCommand } from "./commands/TeamCommand.ts";
 import { JamOperationService } from "./services/JamOperationService.ts";
+import { EventRegistry } from "../../core/events/EventRegistry.ts";
+import { VerifiedRoleRemoved } from "./events/VerifiedRoleRemoved.ts";
 
 export function registerJamModule(container: DependencyContainer): void {
   container.registerSingleton(JamOperationService);
+  container.resolve(EventRegistry).register(container.resolve(VerifiedRoleRemoved));
 
   const commands = container.resolve(CommandRegistry);
   commands.register(container.resolve(JamSetupCommand));

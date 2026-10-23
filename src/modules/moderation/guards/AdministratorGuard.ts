@@ -7,7 +7,7 @@ import type { GuardResult } from "../../../core/guards/GuardResult.ts";
 @injectable()
 export class AdministratorGuard implements Guard {
   async check(context: CommandContext): Promise<GuardResult> {
-    if (!context.guild || !context.interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+    if (!context.guild || !(await context.getActor()).permissions.has(PermissionFlagsBits.Administrator)) {
       return { allowed: false, message: "Administrator permission is required in a server." };
     }
     return { allowed: true };

@@ -15,6 +15,13 @@
       "when": 1792503577678,
       "tag": "0001_game_jam",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792778935562,
+      "tag": "0002_remove_jam_sync_flags",
+      "breakpoints": true
     }
   ]
 }

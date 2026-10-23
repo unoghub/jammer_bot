@@ -1,12 +1,13 @@
 import type { Guild } from "discord.js";
-import { injectable } from "tsyringe";
+import { inject, injectable } from "tsyringe";
+import type { Config } from "../../../config/Config.ts";
+import { TOKENS } from "../../../config/tokens.ts";
 import { CommandError } from "../../../core/errors/CommandError.ts";
 import { JamAccessService } from "./JamAccessService.ts";
 import { JamChannelService } from "./JamChannelService.ts";
 import { JamOperationService } from "./JamOperationService.ts";
-import { JamRepository, type GameJam, type JamTeam } from "./JamRepository.ts";
+import { JamRepository, type JamTeam } from "./JamRepository.ts";
 
-const MAX_TEAM_MEMBERS = 90;
 const TEAM_NAME_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N} _-]{0,49}$/u;
 
 @injectable()
@@ -16,89 +17,77 @@ export class TeamService {
     private readonly access: JamAccessService,
     private readonly operations: JamOperationService,
     private readonly channels: JamChannelService,
+    @inject(TOKENS.Config) private readonly config: Config,
   ) {}
 
   async create(guild: Guild, ownerId: string, input: string): Promise<JamTeam> {
-    const teamId = await this.operations.run(guild, async (jam) => {
-      await this.access.requireParticipant(guild, ownerId);
-      await this.requireAvailableMember(guild.id, ownerId);
+    return this.operations.run(guild, async (jam) => {
+      await this.access.requireParticipant(guild, jam, ownerId);
       const name = input.normalize("NFKC").trim();
       if (!TEAM_NAME_PATTERN.test(name)) {
-        throw new CommandError(
-          "Takım adı 1–50 harf/rakam olmalı; boşluk, tire ve alt çizgi içerebilir.",
-          "INVALID_TEAM_NAME",
-        );
+        throw new CommandError("Takım adı 1–50 karakter olmalı; harf, rakam, boşluk, tire ve alt çizgi içerebilir.", "INVALID_TEAM_NAME");
       }
-
-      const teams = await this.repository.teams(guild.id);
-      const nameTaken = teams.some((team) => team.activeName === name.toLocaleLowerCase("en"));
-      if (nameTaken) {
-        throw new CommandError("Bu takım adı kullanılıyor.", "TEAM_NAME_TAKEN");
+      let team = await this.repository.memberTeam(guild.id, ownerId);
+      if (team && (team.ownerId !== ownerId || team.name !== name || !["creating", "active"].includes(team.status))) {
+        throw new CommandError("Zaten bir takımda bulunuyorsunuz.", "ALREADY_IN_TEAM");
       }
-      await this.channels.requireTeamCapacity(guild, jam.categoryId!);
-      return this.repository.createTeam(guild.id, ownerId, name);
+      if (!team) {
+        if (await this.repository.findTeam(guild.id, name)) {
+          throw new CommandError("Bu takım adı kullanılıyor.", "TEAM_NAME_TAKEN");
+        }
+        if (!jam.categoryId) throw new CommandError("Önce /jam-setup ile kanal kurulumunu tamamlayın.", "JAM_CATEGORY_MISSING");
+        await this.channels.requireTeamCapacity(guild, jam.categoryId);
+        team = await this.repository.createTeam(guild.id, ownerId, name);
+      }
+      const result = await this.channels.configureTeam(guild, jam, team);
+      await this.channels.updateTeamList(guild, jam);
+      return result;
     });
-
-    return this.requireTeam(guild.id, teamId);
   }
 
-  async addMember(guild: Guild, actorId: string, userId: string, teamName?: string): Promise<void> {
+  async addMember(guild: Guild, teamId: string, userId: string): Promise<void> {
     await this.operations.run(guild, async (jam) => {
-      const team = await this.requireManagedTeam(guild, jam, actorId, teamName);
-      await this.access.requireParticipant(guild, userId);
-      await this.requireAvailableMember(guild.id, userId);
-      const members = await this.repository.members(team.id);
-      if (members.length >= MAX_TEAM_MEMBERS) {
-        throw new CommandError("Takım kanalının üye izin sınırına ulaşıldı.", "TEAM_FULL");
+      const team = await this.requireTeam(guild.id, teamId);
+      if (team.status !== "active") throw new CommandError("Takım aktif değil.", "TEAM_NOT_ACTIVE");
+      await this.access.requireParticipant(guild, jam, userId);
+      const existingTeam = await this.repository.memberTeam(guild.id, userId);
+      if (existingTeam && existingTeam.id !== team.id) {
+        throw new CommandError("Kullanıcı zaten başka bir takımda.", "ALREADY_IN_TEAM");
       }
-      await this.repository.addMember(team, userId);
+      const memberIds = await this.repository.memberIds(team.id);
+      if (!existingTeam) {
+        if (memberIds.length >= this.config.jamMaxTeamMembers) {
+          throw new CommandError("Takım üye sınırına ulaştı.", "TEAM_FULL");
+        }
+        await this.repository.addMember(team, userId);
+        memberIds.push(userId);
+      }
+      await this.channels.configureTeam(guild, jam, team, memberIds);
     });
   }
 
-  async disband(guild: Guild, actorId: string, teamName?: string): Promise<void> {
+  async disband(guild: Guild, teamId: string): Promise<void> {
     await this.operations.run(guild, async (jam) => {
-      const team = await this.requireManagedTeam(guild, jam, actorId, teamName);
-      await this.repository.beginArchive(team);
+      let team = await this.requireTeam(guild.id, teamId);
+      if (team.status !== "archived") {
+        team = await this.repository.updateTeam(team.id, { status: "archiving" });
+        await this.channels.configureTeam(guild, jam, team);
+      }
+      await this.channels.updateTeamList(guild, jam);
     });
   }
 
-  async getMemberTeam(guild: Guild, userId: string): Promise<JamTeam> {
-    const team = await this.repository.memberTeam(guild.id, userId);
-    if (!team) {
-      throw new CommandError("Bir takımda değilsiniz.", "TEAM_NOT_FOUND");
-    }
+  async findTeam(guildId: string, userId: string, name?: string): Promise<JamTeam> {
+    const team = name?.trim()
+      ? await this.repository.findTeam(guildId, name)
+      : await this.repository.memberTeam(guildId, userId);
+    if (!team) throw new CommandError("Takım bulunamadı.", "TEAM_NOT_FOUND");
     return team;
   }
 
   private async requireTeam(guildId: string, teamId: string): Promise<JamTeam> {
     const team = await this.repository.getTeam(guildId, teamId);
-    if (!team) {
-      throw new CommandError("Takım bulunamadı.", "TEAM_NOT_FOUND");
-    }
-    return team;
-  }
-
-  private async requireAvailableMember(guildId: string, userId: string): Promise<void> {
-    if (await this.repository.memberTeam(guildId, userId)) {
-      throw new CommandError("Kullanıcı zaten bir takımda.", "ALREADY_IN_TEAM");
-    }
-  }
-
-  private async requireManagedTeam(
-    guild: Guild, jam: GameJam, actorId: string, teamName?: string,
-  ): Promise<JamTeam> {
-    const normalizedName = teamName?.normalize("NFKC").trim().toLocaleLowerCase("en");
-    const team = normalizedName
-      ? (await this.repository.teams(guild.id)).find((candidate) => candidate.activeName === normalizedName)
-      : await this.repository.memberTeam(guild.id, actorId);
-
-    if (!team || team.status !== "active") {
-      throw new CommandError("Aktif takım bulunamadı.", "TEAM_NOT_FOUND");
-    }
-    const isOwner = team.ownerId === actorId;
-    if (!isOwner && !await this.access.isMaintainer(guild, jam, actorId)) {
-      throw new CommandError("Takım sahibi veya jam yetkilisi olmalısınız.", "TEAM_MANAGEMENT_DENIED");
-    }
+    if (!team) throw new CommandError("Takım bulunamadı.", "TEAM_NOT_FOUND");
     return team;
   }
 }

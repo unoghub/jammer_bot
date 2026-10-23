@@ -16,14 +16,12 @@ export const gameJams = sqliteTable("game_jams", {
   categoryId: text("category_id"),
   archiveCategoryId: text("archive_category_id"),
   teamListChannelId: text("team_list_channel_id"),
-  listNeedsSync: integer("list_needs_sync", { mode: "boolean" }).notNull().default(true),
 });
 
 export const jamParticipants = sqliteTable("jam_participants", {
   guildId: text("guild_id").notNull().references(() => gameJams.guildId),
   userId: text("user_id").notNull(),
   active: integer("active", { mode: "boolean" }).notNull().default(true),
-  needsSync: integer("needs_sync", { mode: "boolean" }).notNull().default(true),
 }, (table) => [primaryKey({ columns: [table.guildId, table.userId] })]);
 
 export const jamBlacklist = sqliteTable("jam_blacklist", {
@@ -43,7 +41,6 @@ export const jamTeams = sqliteTable("jam_teams", {
   textChannelId: text("text_channel_id"),
   voiceChannelId: text("voice_channel_id"),
   archivedMemberIds: text("archived_member_ids", { mode: "json" }).$type<string[]>().notNull(),
-  needsSync: integer("needs_sync", { mode: "boolean" }).notNull().default(true),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
   archivedAt: integer("archived_at", { mode: "timestamp" }),
 }, (table) => [

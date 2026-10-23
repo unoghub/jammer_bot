@@ -2,36 +2,27 @@ import { PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { injectable } from "tsyringe";
 import { Command } from "../../../core/commands/Command.ts";
 import type { CommandContext } from "../../../core/commands/CommandContext.ts";
+import { AdministratorGuard } from "../../moderation/guards/AdministratorGuard.ts";
 import { GameJamService } from "../services/GameJamService.ts";
 
 @injectable()
 export class JamSetupCommand extends Command {
   readonly data = new SlashCommandBuilder()
     .setName("jam-setup")
-    .setDescription("Game Jam rollerini ve kanallarını yapılandır")
+    .setDescription("Game Jam rollerini ve kanallarını .env ayarlarıyla yapılandır")
     .setDMPermission(false)
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-    .addRoleOption((option) => option
-      .setName("participant")
-      .setDescription("Mevcut Jam Participant rolü")
-      .setRequired(true))
-    .addRoleOption((option) => option
-      .setName("maintainer")
-      .setDescription("Mevcut Jam Maintainer rolü")
-      .setRequired(true));
-
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
   override readonly cooldown = 3_000;
+  override readonly guards;
 
-  constructor(private readonly gameJam: GameJamService) {
+  constructor(private readonly gameJam: GameJamService, administrator: AdministratorGuard) {
     super();
+    this.guards = [administrator];
   }
 
   async execute(context: CommandContext): Promise<void> {
-    const guild = context.requireGuild();
-    const participant = context.options.getRole("participant", true);
-    const maintainer = context.options.getRole("maintainer", true);
     await context.defer(true);
-    await this.gameJam.setup(guild, context.user.id, participant.id, maintainer.id);
-    await context.editReply("Game Jam kategorileri ve takım listesi hazır.");
+    await this.gameJam.setup(context.requireGuild());
+    await context.editReply("Game Jam kanalları ve takım listesi hazır.");
   }
 }

@@ -7,6 +7,8 @@ export class InteractionRouter {
   constructor(private readonly commands: CommandHandler) {}
 
   async route(interaction: Interaction): Promise<void> {
-    if (interaction.isChatInputCommand()) await this.commands.handle(interaction);
+    if (interaction.isChatInputCommand() || interaction.isModalSubmit()) {
+      await this.commands.handle(interaction);
+    }
   }
 }
