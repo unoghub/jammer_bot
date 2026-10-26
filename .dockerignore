@@ -1,8 +1,11 @@
 *
 !package.json
 !bun.lock
+!tsconfig.json
 !src/
 !src/**
+!scripts/
+!scripts/**
 !drizzle.config.ts
 !drizzle/
 !drizzle/**

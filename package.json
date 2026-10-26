@@ -4,9 +4,10 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "bun run src/main.ts",
+    "start": "bun run out/main.js",
     "dev": "bun --watch src/main.ts",
-    "typecheck": "tsc --noEmit",
+    "build": "bun run scripts/build.ts",
+    "typecheck": "bun check",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "prepare": "husky"

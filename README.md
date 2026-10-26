@@ -9,6 +9,8 @@ A modular Discord bot foundation built with TypeScript, Bun, discord.js v14, tsy
 3. Invite the bot with the `bot` and `applications.commands` scopes. Grant it **Ban Members** for `/ban`, and keep its role above members it should ban.
 4. Run `bun run src/main.ts` or `bun run start`. Use `bun run dev` for watch mode and `bun run typecheck` for strict TypeScript validation.
 
+Run `bun run build` to create a minified, bundled `out/main.js`. Run it with `bun out/main.js`. The Docker image builds this file and starts the bot from it after applying database migrations.
+
 `NODE_ENV=development` deploys commands to `DISCORD_GUILD_ID` on startup. `NODE_ENV=production` deploys global commands. Guild commands generally become available sooner. Command deployment replaces the commands for the selected scope, so use a dedicated development guild. A deploy failure stops startup before Discord login.
 
 Only `src/config/Config.ts` reads environment variables at runtime. Required values are validated before services are created. The bot checks the database connection before deploying commands and logging in to Discord. The bot cannot connect without real Discord credentials.
