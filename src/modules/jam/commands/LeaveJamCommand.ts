@@ -1,10 +1,8 @@
 import { SlashCommandBuilder } from "discord.js";
 import { Command } from "../../../core/commands/Command";
 import type { CommandContext } from "../../../core/commands/CommandContext";
-import { DatabaseService } from "../../../infrastructure/database/DatabaseService";
 import { injectable } from "tsyringe";
-import { jamParticipants } from "../../../infrastructure/database/schema";
-import { eq } from "drizzle-orm";
+import { ParticipationService } from "../services/ParticipationService";
 
 @injectable()
 export class LeaveJamCommand extends Command {
@@ -12,29 +10,22 @@ export class LeaveJamCommand extends Command {
     .setName("leave-jam")
     .setDescription("Leave the game jam");
 
-  constructor(private readonly db: DatabaseService) {
+  constructor(private readonly participation: ParticipationService) {
     super();
   }
 
   async execute(context: CommandContext): Promise<void> {
-    const db = this.db.db;
-
-    const userId = context.interaction.user.id;
-
-    const deleted = await db
-      .delete(jamParticipants)
-      .where(eq(jamParticipants.userId, userId))
-      .returning({ userId: jamParticipants.userId });
-
-    if (deleted.length > 0) {
-      await context.interaction.reply({
-        content: "You have successfully left the game jam.",
-        ephemeral: true,
+    await context.defer(true);
+    const result = await this.participation.removeParticipant(
+      context.interaction.user,
+    );
+    if (result) {
+      await context.editReply({
+        content: "You have successfully left the jam!",
       });
     } else {
-      await context.interaction.reply({
-        content: "You are not currently participating in the game jam.",
-        ephemeral: true,
+      await context.editReply({
+        content: "You are not registered as a participant.",
       });
     }
   }
