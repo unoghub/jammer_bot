@@ -10,3 +10,10 @@ export const guildSettings = sqliteTable("guild_settings", {
     .notNull()
     .default(sql`(unixepoch())`),
 });
+
+export const jamParticipants = sqliteTable("jam_participants", {
+  userId: text("user_id").primaryKey(),
+  name: text("name").notNull(),
+  bio: text("bio"),
+  joinedAt: integer("joined_at", { mode: "timestamp" }),
+});
