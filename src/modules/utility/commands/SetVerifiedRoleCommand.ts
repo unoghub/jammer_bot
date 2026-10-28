@@ -5,7 +5,6 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from "discord.js";
-import type { AdministratorGuard } from "../../moderation/guards/AdministratorGuard";
 import type { CommandContext } from "../../../core/commands/CommandContext";
 
 @injectable()
@@ -18,12 +17,6 @@ export class SetVerifiedRoleCommand extends Command {
     .addRoleOption((option) =>
       option.setName("role").setDescription("Verified role").setRequired(true),
     );
-  override readonly guards;
-
-  constructor(administratorGuard: AdministratorGuard) {
-    super();
-    this.guards = [administratorGuard];
-  }
 
   override async execute(context: CommandContext): Promise<void> {
     await context.reply(
