@@ -6,11 +6,17 @@ import { registerModerationModule } from "../modules/moderation/index.ts";
 import { registerUtilityModule } from "../modules/utility/index.ts";
 import { ReadyEvent } from "./events/ReadyEvent.ts";
 import { MessageEvent } from "./events/MessageEvent.ts";
+import { registerTeamModule } from "../modules/team/index.ts";
+import { registerJamModule } from "../modules/jam/index.ts";
 
 export function registerModules(container: DependencyContainer): void {
-  container.resolve(MiddlewareRunner).register(container.resolve(LoggingMiddleware));
+  container
+    .resolve(MiddlewareRunner)
+    .register(container.resolve(LoggingMiddleware));
   container.resolve(EventRegistry).register(container.resolve(ReadyEvent));
   // container.resolve(EventRegistry).register(container.resolve(MessageEvent));
   registerUtilityModule(container);
   registerModerationModule(container);
+  registerTeamModule(container);
+  registerJamModule(container);
 }
