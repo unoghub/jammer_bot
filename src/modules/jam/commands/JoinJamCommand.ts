@@ -29,6 +29,7 @@ export class JoinJamCommand extends Command {
       .limit(1);
 
     if (result.length > 0) {
+      // TODO : make this throw an exception
       await context.reply({
         content: "You are already in the jam.",
         flags: [MessageFlags.Ephemeral],
