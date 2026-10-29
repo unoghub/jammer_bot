@@ -15,6 +15,13 @@
       "when": 1793189674484,
       "tag": "0001_pale_firelord",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793291552391,
+      "tag": "0002_unusual_hellcat",
+      "breakpoints": true
     }
   ]
 }

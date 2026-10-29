@@ -1,8 +1,6 @@
 import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-// örnek schema
-// https://orm.drizzle.team/docs/sql-schema-declaration
 export const guildSettings = sqliteTable("guild_settings", {
   guildId: text("guild_id").primaryKey(),
   logChannelId: text("log_channel_id"),
@@ -16,4 +14,23 @@ export const jamParticipants = sqliteTable("jam_participants", {
   name: text("name").notNull(),
   bio: text("bio"),
   joinedAt: integer("joined_at", { mode: "timestamp" }),
+});
+
+export const jamTeams = sqliteTable("jam_teams", {
+  teamId: text("team_id").primaryKey(),
+  createdAt: integer("created_at", { mode: "timestamp" }),
+  teamOwner: text("user_id")
+    .notNull()
+    .references(() => jamParticipants.userId),
+});
+
+export const jamTeamChannels = sqliteTable("jam_team_channels", {
+  channelId: text("channel_id").primaryKey(),
+  createdAt: integer("created_at", { mode: "timestamp" }),
+  teamId: text("team_id")
+    .notNull()
+    .references(() => jamTeams.teamId, { onDelete: "cascade" }),
+  channelType: text("channel_type", {
+    enum: ["text", "voice"],
+  }).notNull(),
 });
