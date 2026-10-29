@@ -3,6 +3,7 @@ import { Command } from "../../../core/commands/Command";
 import type { CommandContext } from "../../../core/commands/CommandContext";
 import { injectable } from "tsyringe";
 import { TeamService } from "../services/TeamService";
+import { ParticipantGuard } from "../../jam/guards/ParticipantGuard";
 
 @injectable()
 export class CreateTeamCommand extends Command {
@@ -15,9 +16,14 @@ export class CreateTeamCommand extends Command {
         .setDescription("The name of the team to create.")
         .setRequired(true),
     );
+  override readonly guards;
 
-  constructor(private readonly team: TeamService) {
+  constructor(
+    private readonly team: TeamService,
+    participantGuard: ParticipantGuard,
+  ) {
     super();
+    this.guards = [participantGuard];
   }
 
   async execute(context: CommandContext): Promise<void> {

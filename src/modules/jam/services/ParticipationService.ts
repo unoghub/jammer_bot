@@ -5,6 +5,7 @@ import { jamParticipants } from "../../../infrastructure/database/schema";
 import { eq } from "drizzle-orm";
 import type { Logger } from "../../../infrastructure/logger/Logger";
 import { CommandError } from "../../../core/errors/CommandError";
+import type { Dictionary } from "tsyringe/dist/typings/types";
 
 @injectable()
 export class ParticipationService {
@@ -49,5 +50,15 @@ export class ParticipationService {
     }
 
     return user;
+  }
+
+  async fetchParticipant(user: User): Promise<Record<string, any> | null> {
+    const result = await this.db.db
+      .select()
+      .from(jamParticipants)
+      .where(eq(jamParticipants.userId, user.id))
+      .get();
+
+    return result ?? null;
   }
 }
