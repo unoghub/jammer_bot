@@ -29,6 +29,11 @@ export class CreateTeamCommand extends Command {
   async execute(context: CommandContext): Promise<void> {
     await context.defer(true);
     const team_name = context.options.getString("team_name", true);
-    context.editReply(`lorem ipsum or something: ${team_name}`);
+    await this.team.createTeam({
+      name: team_name,
+      owner: context.user,
+      create_date: new Date(),
+    });
+    await context.editReply(`lorem ipsum or something: ${team_name}`);
   }
 }
