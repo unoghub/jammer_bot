@@ -6,7 +6,8 @@ import {
   jamTeamMembers,
 } from "../../../infrastructure/database/schema";
 import { CommandError } from "../../../core/errors/CommandError";
-import { eq, lt, sql } from "drizzle-orm";
+import { DrizzleQueryError, eq, lt, sql } from "drizzle-orm";
+import { LibsqlError } from "@libsql/client";
 
 @injectable()
 export class MembershipRequestService {
@@ -58,6 +59,21 @@ export class MembershipRequestService {
       .returning({
         userId: jamTeamMemberRequests.userId,
         teamId: jamTeamMemberRequests.teamId,
+      })
+      .catch((error) => {
+        if (
+          error instanceof DrizzleQueryError &&
+          error.cause instanceof LibsqlError &&
+          error.cause.code === "SQLITE_CONSTRAINT" &&
+          error.cause.message.includes("FOREIGN KEY constraint failed")
+        ) {
+          throw new CommandError(
+            "The team you are trying to join does not exist.",
+            "TEAM_NOT_FOUND",
+          );
+        }
+
+        throw error;
       });
 
     if (result.length === 0) {
