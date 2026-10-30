@@ -51,3 +51,19 @@ export const jamTeamMembers = sqliteTable(
   },
   (table) => [primaryKey({ columns: [table.teamId, table.userId] })],
 );
+
+export const jamTeamMemberRequests = sqliteTable(
+  "jam_team_member_requests",
+  {
+    teamId: text("team_id")
+      .notNull()
+      .references(() => jamTeams.teamId),
+    userId: text("user_id")
+      .notNull()
+      .references(() => jamParticipants.userId),
+    type: text("type", { enum: ["request", "invite"] }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }),
+    expiresAt: integer("expires_at", { mode: "timestamp" }),
+  },
+  (table) => [primaryKey({ columns: [table.teamId, table.userId] })],
+);
