@@ -20,8 +20,9 @@
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",
-    "discord.js": "^14.27.0",
-    "drizzle-orm": "^0.45.4",
+    "discord.js": "^14",
+    "drizzle-orm": "^0.45.3",
+    "keyv": "^6.1.0",
     "pino": "^10.4.0",
     "pino-pretty": "^13.2.0",
     "reflect-metadata": "^0.2.2",
