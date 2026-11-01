@@ -19,6 +19,14 @@ Only `src/config/Config.ts` reads environment variables at runtime. Required val
 
 The shared `DatabaseService` exposes its Drizzle client as `db`. Inject it into a feature service through its constructor, then use `database.db` for queries. `src/infrastructure/database/schema.ts` includes a small `guildSettings` example with a guild ID, an optional log channel ID, and a creation timestamp. Add and export further tables there; keep feature-specific queries in that feature's service or repository. The example table is not used by a command yet.
 
+Selected Drizzle queries can use the process-local cache with `.$withCache()`:
+
+```ts
+const settings = await database.db.select().from(guildSettings).$withCache();
+```
+
+Entries expire after 60 seconds and the cache holds at most 500 queries. Drizzle invalidates cached queries when it writes to their tables. The cache is cleared on restart and is not shared between bot instances. Queries without `.$withCache()` still go directly to the database.
+
 After changing the schema, run `bun run db:generate` to create SQL migrations. Review the generated SQL, commit the new files under `drizzle/`, and run `bun run db:migrate` against your development database. Use a separate local or development Turso database; do not put production database credentials in developer `.env` files.
 
 For local development without a Turso account, set `TURSO_DATABASE_URL=file:local.sqlite` and omit `TURSO_AUTH_TOKEN`. For a hosted Turso database, use its `libsql://` URL and token. Local SQLite files are ignored by Git.
