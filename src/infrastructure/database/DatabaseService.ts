@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import { inject, injectable } from "tsyringe";
 import type { Config } from "../../config/Config.ts";
 import { TOKENS } from "../../config/tokens.ts";
+import { MemoryCache } from "./MemoryCache.ts";
 import * as schema from "./schema.ts";
 
 @injectable()
@@ -16,7 +17,11 @@ export class DatabaseService {
       url: config.tursoDatabaseUrl,
       authToken: config.tursoAuthToken,
     });
-    this.db = drizzle(this.client, { schema });
+    this.db = drizzle(this.client, 
+      { 
+        schema, 
+        cache: new MemoryCache() 
+      });
   }
 
   async checkConnection(): Promise<void> {
