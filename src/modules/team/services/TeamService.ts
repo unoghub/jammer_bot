@@ -83,15 +83,25 @@ export class TeamService {
     }
   }
 
-  async isTeamOwner(userId: string): Promise<boolean> {
+  // TODO : cache this query (well, you should probably cache most queries but this is more important), see TeamService::isTeamOwner().
+  async fetchMembershipFromUser(
+    userId: string,
+  ): Promise<{ teamId: string; userId: string; isOwner: boolean } | null> {
     const db = this.db.db;
 
     const [result] = await db
-      .select({ isOwner: jamTeamMembers.isOwner })
+      .select()
       .from(jamTeamMembers)
       .where(eq(jamTeamMembers.userId, userId))
       .limit(1);
 
+    return result ?? null;
+  }
+
+  // NOTE : a slash command that has a guard case and a membership query makes two queries.
+  // the way guards are structured makes it difficult to share query results between it and command execution, but caching this query will solve that.
+  async isTeamOwner(userId: string): Promise<boolean> {
+    const result = await this.fetchMembershipFromUser(userId);
     return result?.isOwner ?? false;
   }
 }
