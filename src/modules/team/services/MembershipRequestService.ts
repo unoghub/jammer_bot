@@ -84,10 +84,29 @@ export class MembershipRequestService {
     }
   }
 
-  async accept(
+  private handleRequest(
     userId: string,
     teamId: string,
-  ): Promise<{ status: "not_found" | "expired" | "accepted" }> {
+    action: "accept",
+  ): Promise<{
+    status: "not_found" | "expired" | "accepted";
+  }>;
+
+  private handleRequest(
+    userId: string,
+    teamId: string,
+    action: "deny",
+  ): Promise<{
+    status: "not_found" | "expired" | "denied";
+  }>;
+
+  private async handleRequest(
+    userId: string,
+    teamId: string,
+    action: "accept" | "deny",
+  ): Promise<{
+    status: "not_found" | "expired" | "accepted" | "denied";
+  }> {
     const db = this.db.db;
 
     return db.transaction(async (tx) => {
@@ -95,6 +114,7 @@ export class MembershipRequestService {
         where: and(
           eq(jamTeamMemberRequests.userId, userId),
           eq(jamTeamMemberRequests.teamId, teamId),
+          eq(jamTeamMemberRequests.type, "request"),
         ),
       });
 
@@ -119,11 +139,29 @@ export class MembershipRequestService {
         .delete(jamTeamMemberRequests)
         .where(eq(jamTeamMemberRequests.userId, userId));
 
-      await tx
-        .insert(jamTeamMembers)
-        .values({ userId: request.userId, teamId: teamId });
+      if (action === "accept") {
+        await tx
+          .insert(jamTeamMembers)
+          .values({ userId: request.userId, teamId: teamId });
 
-      return { status: "accepted" };
+        return { status: "accepted" };
+      }
+
+      return { status: "denied" };
     });
+  }
+
+  async accept(
+    userId: string,
+    teamId: string,
+  ): Promise<{ status: "not_found" | "expired" | "accepted" }> {
+    return this.handleRequest(userId, teamId, "accept");
+  }
+
+  async deny(
+    userId: string,
+    teamId: string,
+  ): Promise<{ status: "not_found" | "expired" | "denied" }> {
+    return this.handleRequest(userId, teamId, "deny");
   }
 }
