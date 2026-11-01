@@ -42,11 +42,11 @@ export const jamTeamMembers = sqliteTable(
   {
     teamId: text("team_id")
       .notNull()
-      .references(() => jamTeams.teamId),
+      .references(() => jamTeams.teamId, { onDelete: "cascade" }),
     userId: text("user_id")
       .notNull()
       .unique()
-      .references(() => jamParticipants.userId),
+      .references(() => jamParticipants.userId, { onDelete: "cascade" }),
     isOwner: integer("is_owner", { mode: "boolean" }).notNull().default(false),
   },
   (table) => [primaryKey({ columns: [table.teamId, table.userId] })],
@@ -57,7 +57,7 @@ export const jamTeamMemberRequests = sqliteTable(
   {
     teamId: text("team_id")
       .notNull()
-      .references(() => jamTeams.teamId),
+      .references(() => jamTeams.teamId, { onDelete: "cascade" }),
     userId: text("user_id")
       .notNull()
       .references(() => jamParticipants.userId),
