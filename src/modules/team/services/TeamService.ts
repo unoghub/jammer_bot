@@ -83,6 +83,22 @@ export class TeamService {
     }
   }
 
+  async removeTeamMember(userId: string): Promise<void> {
+    const db = this.db.db;
+
+    const result = await db
+      .delete(jamTeamMembers)
+      .where(eq(jamTeamMembers.userId, userId))
+      .returning({ userId: jamTeamMembers.userId });
+
+    if (result.length === 0) {
+      throw new CommandError(
+        "User is not a member of any team",
+        "USER_NOT_MEMBER",
+      );
+    }
+  }
+
   // TODO : cache this query (well, you should probably cache most queries but this is more important), see TeamService::isTeamOwner().
   async fetchMembershipFromUser(
     userId: string,
