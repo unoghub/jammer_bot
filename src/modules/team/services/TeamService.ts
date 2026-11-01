@@ -6,6 +6,7 @@ import {
   jamTeams,
 } from "../../../infrastructure/database/schema";
 import { CommandError } from "../../../core/errors/CommandError";
+import { eq, and } from "drizzle-orm";
 
 @injectable()
 export class TeamService {
@@ -80,5 +81,17 @@ export class TeamService {
         "USER_ALREADY_MEMBER",
       );
     }
+  }
+
+  async isTeamOwner(userId: string): Promise<boolean> {
+    const db = this.db.db;
+
+    const [result] = await db
+      .select({ isOwner: jamTeamMembers.isOwner })
+      .from(jamTeamMembers)
+      .where(eq(jamTeamMembers.userId, userId))
+      .limit(1);
+
+    return result?.isOwner ?? false;
   }
 }
