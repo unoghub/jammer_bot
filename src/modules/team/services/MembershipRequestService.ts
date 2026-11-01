@@ -6,7 +6,7 @@ import {
   jamTeamMembers,
 } from "../../../infrastructure/database/schema";
 import { CommandError } from "../../../core/errors/CommandError";
-import { DrizzleQueryError, eq, lt, sql } from "drizzle-orm";
+import { and, DrizzleQueryError, eq, lt, sql } from "drizzle-orm";
 import { LibsqlError } from "@libsql/client";
 
 @injectable()
@@ -82,5 +82,48 @@ export class MembershipRequestService {
         "ALREADY_REQUESTED",
       );
     }
+  }
+
+  async accept(
+    userId: string,
+    teamId: string,
+  ): Promise<{ status: "not_found" | "expired" | "accepted" }> {
+    const db = this.db.db;
+
+    return db.transaction(async (tx) => {
+      const request = await tx.query.jamTeamMemberRequests.findFirst({
+        where: and(
+          eq(jamTeamMemberRequests.userId, userId),
+          eq(jamTeamMemberRequests.teamId, teamId),
+        ),
+      });
+
+      if (!request) {
+        return { status: "not_found" } as const;
+      }
+
+      if (request.expiresAt !== null && request.expiresAt <= new Date()) {
+        await tx
+          .delete(jamTeamMemberRequests)
+          .where(
+            and(
+              eq(jamTeamMemberRequests.userId, userId),
+              eq(jamTeamMemberRequests.teamId, teamId),
+            ),
+          );
+
+        return { status: "expired" } as const;
+      }
+
+      await tx
+        .delete(jamTeamMemberRequests)
+        .where(eq(jamTeamMemberRequests.userId, userId));
+
+      await tx
+        .insert(jamTeamMembers)
+        .values({ userId: request.userId, teamId: teamId });
+
+      return { status: "accepted" };
+    });
   }
 }
