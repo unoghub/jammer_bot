@@ -8,13 +8,21 @@ import type { Middleware } from "./Middleware.ts";
 export class LoggingMiddleware implements Middleware {
   constructor(@inject(TOKENS.Logger) private readonly logger: Logger) {}
 
-  async execute(context: CommandContext, next: () => Promise<void>): Promise<void> {
+  async execute(
+    context: CommandContext,
+    next: () => Promise<void>,
+  ): Promise<void> {
     const start = Date.now();
     try {
       await next();
     } finally {
+      const subcommand = context.interaction.options.getSubcommand(false);
+      const subcommandGroup =
+        context.interaction.options.getSubcommandGroup(false);
       this.logger.info("Command handled", {
         command: context.interaction.commandName,
+        ...(subcommandGroup && { subcommandGroup }),
+        ...(subcommand && { subcommand }),
         userId: context.user.id,
         durationMs: Date.now() - start,
       });
