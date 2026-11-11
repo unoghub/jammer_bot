@@ -5,6 +5,7 @@ import type { CommandContext } from "./CommandContext";
 import type { Subcommand } from "./Subcommand";
 import { SubcommandRegistry } from "./SubcommandRegistry";
 import { CommandError } from "../errors/CommandError";
+import { CommandHandler } from "./CommandHandler";
 
 export abstract class SubcommandGroup implements CommandPolicy {
   abstract readonly data: SlashCommandSubcommandGroupBuilder;
@@ -19,9 +20,9 @@ export abstract class SubcommandGroup implements CommandPolicy {
     const subcommand = context.options.getSubcommand(false);
     if (subcommand) {
       const cmd = this.subcommands.get(subcommand);
-      if (!cmd)
-        throw new CommandError("Subcommand not found", "SUBCOMMAND_NOT_FOUND");
-      await cmd.execute(context);
+      if (!cmd) throw new CommandError("Subcommand not found", "SUBCOMMAND_NOT_FOUND");
+      context.subcommand = subcommand;
+      context.handler.run(context, cmd);
       return;
     }
   }

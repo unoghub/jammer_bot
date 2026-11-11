@@ -9,6 +9,9 @@ import { GuardRunner } from "../guards/GuardRunner.ts";
 import { MiddlewareRunner } from "../middleware/MiddlewareRunner.ts";
 import { CommandContext } from "./CommandContext.ts";
 import { CommandRegistry } from "./CommandRegistry.ts";
+import type { Command } from "./Command.ts";
+import type { Subcommand } from "./Subcommand.ts";
+import type { SubcommandGroup } from "./SubcommandGroup.ts";
 
 @injectable()
 export class CommandHandler {
@@ -28,17 +31,22 @@ export class CommandHandler {
         this.logger.warn("Unknown command", { command: interaction.commandName });
         throw new CommandError("This command is currently unavailable.", "UNKNOWN_COMMAND");
       }
-      const context = new CommandContext(interaction);
-      const result = await this.guards.run(command.guards ?? [], context);
-      if (!result.allowed) throw new CommandError(result.message ?? "You cannot use this command.", "GUARD_DENIED");
-
-      const remaining = this.cooldowns.acquire(command.data.name, context.user.id, command.cooldown ?? 0);
-      if (remaining > 0) {
-        throw new CommandError(`Please wait ${Math.ceil(remaining / 1000)} second(s) before using this command again.`, "COOLDOWN");
-      }
-      await this.middleware.run(context, () => command.execute(context));
+      // we index the handler inside the context i am so sorry for my sins
+      const context = new CommandContext(interaction, this);
+      this.run(context, command);
     } catch (error) {
       await this.errors.handle(error, interaction);
     }
+  }
+
+  async run(context: CommandContext, command: Command | SubcommandGroup | Subcommand): Promise<void> {
+    const result = await this.guards.run(command.guards ?? [], context);
+    if (!result.allowed) throw new CommandError(result.message ?? "You cannot use this command.", "GUARD_DENIED");
+
+    const remaining = this.cooldowns.acquire(context.name, context.user.id, command.cooldown ?? 0);
+    if (remaining > 0) {
+      throw new CommandError(`Please wait ${Math.ceil(remaining / 1000)} second(s) before using this command again.`, "COOLDOWN");
+    }
+    await this.middleware.run(context, () => command.execute(context));
   }
 }
