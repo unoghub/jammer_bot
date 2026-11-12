@@ -1,22 +1,21 @@
 import type { User } from "discord.js";
 import { injectable } from "tsyringe";
 import { DatabaseService } from "../../../infrastructure/database/DatabaseService";
-import {
-  jamTeamMembers,
-  jamTeams,
-} from "../../../infrastructure/database/schema";
+import { jamTeamMembers, jamTeams } from "../../../infrastructure/database/schema";
 import { CommandError } from "../../../core/errors/CommandError";
 import { eq, and } from "drizzle-orm";
+
+export type TeamMembershipState = {
+  userId: string;
+  teamId: string;
+  isOwner: boolean;
+};
 
 @injectable()
 export class TeamService {
   constructor(private readonly db: DatabaseService) {}
 
-  async createTeam(data: {
-    name: string;
-    owner: User;
-    create_date?: Date;
-  }): Promise<string> {
+  async createTeam(data: { name: string; owner: User; create_date?: Date }): Promise<string> {
     const db = this.db.db;
 
     await db
@@ -36,17 +35,11 @@ export class TeamService {
         const message = error instanceof Error ? error.message : String(error);
 
         if (message.includes("jam_teams.team_id")) {
-          throw new CommandError(
-            "Team name already exists",
-            "TEAM_NAME_EXISTS",
-          );
+          throw new CommandError("Team name already exists", "TEAM_NAME_EXISTS");
         }
 
         if (message.includes("jam_team_members.user_id")) {
-          throw new CommandError(
-            "User is already a member of a team",
-            "USER_ALREADY_MEMBER",
-          );
+          throw new CommandError("User is already a member of a team", "USER_ALREADY_MEMBER");
         }
 
         throw error;
@@ -55,11 +48,7 @@ export class TeamService {
     return data.name;
   }
 
-  async addTeamMember(
-    user: User,
-    teamId: string,
-    owner: boolean = false,
-  ): Promise<void> {
+  async addTeamMember(user: User, teamId: string, owner: boolean = false): Promise<void> {
     const db = this.db.db;
 
     const result = await db
@@ -76,40 +65,25 @@ export class TeamService {
       });
 
     if (result.length === 0) {
-      throw new CommandError(
-        "User is already a member of this team",
-        "USER_ALREADY_MEMBER",
-      );
+      throw new CommandError("User is already a member of this team", "USER_ALREADY_MEMBER");
     }
   }
 
   async removeTeamMember(userId: string): Promise<void> {
     const db = this.db.db;
 
-    const result = await db
-      .delete(jamTeamMembers)
-      .where(eq(jamTeamMembers.userId, userId))
-      .returning({ userId: jamTeamMembers.userId });
+    const result = await db.delete(jamTeamMembers).where(eq(jamTeamMembers.userId, userId)).returning({ userId: jamTeamMembers.userId });
 
     if (result.length === 0) {
-      throw new CommandError(
-        "User is not a member of any team",
-        "USER_NOT_MEMBER",
-      );
+      throw new CommandError("User is not a member of any team", "USER_NOT_MEMBER");
     }
   }
 
   // TODO : cache this query (well, you should probably cache most queries but this is more important), see TeamService::isTeamOwner().
-  async fetchMembershipFromUser(
-    userId: string,
-  ): Promise<{ teamId: string; userId: string; isOwner: boolean } | null> {
+  async fetchMembershipFromUser(userId: string): Promise<TeamMembershipState | null> {
     const db = this.db.db;
 
-    const [result] = await db
-      .select()
-      .from(jamTeamMembers)
-      .where(eq(jamTeamMembers.userId, userId))
-      .limit(1);
+    const [result] = await db.select().from(jamTeamMembers).where(eq(jamTeamMembers.userId, userId)).limit(1);
 
     return result ?? null;
   }

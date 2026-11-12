@@ -1,29 +1,18 @@
-import { SlashCommandBuilder } from "discord.js";
-import { Command } from "../../../core/commands/Command";
+import { SlashCommandSubcommandBuilder } from "discord.js";
 import type { CommandContext } from "../../../core/commands/CommandContext";
 import { injectable } from "tsyringe";
 import { TeamService } from "../services/TeamService";
-import { ParticipantGuard } from "../../jam/guards/ParticipantGuard";
+import { Subcommand } from "../../../core/commands/Subcommand";
 
 @injectable()
-export class CreateTeamCommand extends Command {
-  readonly data = new SlashCommandBuilder()
-    .setName("create_team")
+export class CreateTeamCommand extends Subcommand {
+  readonly data = new SlashCommandSubcommandBuilder()
+    .setName("create")
     .setDescription("Creates a new team with the specified name and members.")
-    .addStringOption((option) =>
-      option
-        .setName("team_name")
-        .setDescription("The name of the team to create.")
-        .setRequired(true),
-    );
-  override readonly guards;
+    .addStringOption((option) => option.setName("team_name").setDescription("The name of the team to create.").setRequired(true));
 
-  constructor(
-    private readonly team: TeamService,
-    participantGuard: ParticipantGuard,
-  ) {
+  constructor(private readonly team: TeamService) {
     super();
-    this.guards = [participantGuard];
   }
 
   async execute(context: CommandContext): Promise<void> {
