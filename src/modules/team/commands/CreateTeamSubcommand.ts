@@ -5,7 +5,7 @@ import { TeamService } from "../services/TeamService";
 import { Subcommand } from "../../../core/commands/Subcommand";
 
 @injectable()
-export class CreateTeamCommand extends Subcommand {
+export class CreateTeamSubcommand extends Subcommand {
   readonly data = new SlashCommandSubcommandBuilder()
     .setName("create")
     .setDescription("Creates a new team with the specified name and members.")

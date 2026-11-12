@@ -1,12 +1,12 @@
 import { injectable } from "tsyringe";
 import { Command } from "../../../core/commands/Command";
 import { SlashCommandBuilder } from "discord.js";
-import { JoinTeamCommand } from "./JoinTeamCommand";
+import { JoinTeamSubcommand } from "./JoinTeamSubcommand";
 import type { CommandContext } from "../../../core/commands/CommandContext";
 import { ParticipantGuard } from "../../jam/guards/ParticipantGuard";
-import { CreateTeamCommand } from "./CreateTeamCommand";
-import { JoinRequestCommands } from "./JoinRequestCommands";
-import { TeamKickCommand } from "./TeamKickCommand";
+import { CreateTeamSubcommand } from "./CreateTeamSubcommand";
+import { TeamKickSubcommand } from "./TeamKickSubcommand";
+import type { JoinRequestSubcommandGroup } from "./JoinRequestSubcommandGroup";
 
 @injectable()
 export class TeamCommand extends Command {
@@ -14,11 +14,11 @@ export class TeamCommand extends Command {
   override readonly guards;
 
   constructor(
-    private readonly participantGuard: ParticipantGuard,
-    private readonly createTeamCommand: CreateTeamCommand,
-    private readonly joinTeamCommand: JoinTeamCommand,
-    private readonly joinRequestCommands: JoinRequestCommands,
-    private readonly teamKickCommand: TeamKickCommand,
+    participantGuard: ParticipantGuard,
+    createTeamCommand: CreateTeamSubcommand,
+    joinTeamCommand: JoinTeamSubcommand,
+    joinRequestCommands: JoinRequestSubcommandGroup,
+    teamKickCommand: TeamKickSubcommand,
   ) {
     super();
     this.addSubcommand(joinTeamCommand);

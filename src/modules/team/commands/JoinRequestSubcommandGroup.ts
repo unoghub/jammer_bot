@@ -10,7 +10,7 @@ import { MembershipRequestService } from "../services/MembershipRequestService";
 type TeamRequestContext = CommandContext & { targetUser: User; membership: TeamMembershipState };
 
 @injectable()
-export class JoinRequestAcceptCommand extends Subcommand {
+export class JoinRequestAcceptSubcommand extends Subcommand {
   readonly data = new SlashCommandSubcommandBuilder()
     .setName("accept")
     .setDescription("Accept a join request")
@@ -37,7 +37,7 @@ export class JoinRequestAcceptCommand extends Subcommand {
 }
 
 @injectable()
-export class JoinRequestDenyCommand extends Subcommand {
+export class JoinRequestDenySubcommand extends Subcommand {
   readonly data = new SlashCommandSubcommandBuilder()
     .setName("deny")
     .setDescription("Deny a join request")
@@ -64,13 +64,13 @@ export class JoinRequestDenyCommand extends Subcommand {
 }
 
 @injectable()
-export class JoinRequestCommands extends SubcommandGroup {
+export class JoinRequestSubcommandGroup extends SubcommandGroup {
   readonly data = new SlashCommandSubcommandGroupBuilder().setName("request").setDescription("request");
   override readonly guards;
 
   constructor(
-    private readonly requestDenyCommand: JoinRequestDenyCommand,
-    private readonly requestAcceptCommand: JoinRequestAcceptCommand,
+    private readonly requestDenyCommand: JoinRequestDenySubcommand,
+    private readonly requestAcceptCommand: JoinRequestAcceptSubcommand,
     private readonly teamOwnerGuard: TeamOwnerGuard,
     private readonly team: TeamService,
   ) {

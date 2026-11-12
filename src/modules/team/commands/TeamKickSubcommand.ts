@@ -7,7 +7,7 @@ import type { CommandContext } from "../../../core/commands/CommandContext";
 import { Subcommand } from "../../../core/commands/Subcommand";
 
 @injectable()
-export class TeamKickCommand extends Subcommand {
+export class TeamKickSubcommand extends Subcommand {
   readonly data = new SlashCommandSubcommandBuilder()
     .setName("kick")
     .setDescription("Kick a member from your team")

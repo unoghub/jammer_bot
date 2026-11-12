@@ -6,7 +6,7 @@ import type { CommandContext } from "../../../core/commands/CommandContext";
 import { Subcommand } from "../../../core/commands/Subcommand";
 
 @injectable()
-export class JoinTeamCommand extends Subcommand {
+export class JoinTeamSubcommand extends Subcommand {
   readonly data = new SlashCommandSubcommandBuilder()
     .setName("join")
     .setDescription("Request to join a team")
