@@ -22,7 +22,7 @@ export abstract class SubcommandGroup implements CommandPolicy {
       const cmd = this.subcommands.get(subcommand);
       if (!cmd) throw new CommandError("Subcommand not found", "SUBCOMMAND_NOT_FOUND");
       context.subcommand = subcommand;
-      context.handler.run(context, cmd);
+      await context.handler.run(context, cmd);
       return;
     }
   }
