@@ -1,14 +1,12 @@
-import { SlashCommandBuilder } from "discord.js";
-import { Command } from "../../../core/commands/Command";
+import { SlashCommandSubcommandBuilder } from "discord.js";
 import type { CommandContext } from "../../../core/commands/CommandContext";
 import { injectable } from "tsyringe";
 import { ParticipationService } from "../services/ParticipationService";
+import { Subcommand } from "../../../core/commands/Subcommand";
 
 @injectable()
-export class JoinJamCommand extends Command {
-  readonly data = new SlashCommandBuilder()
-    .setName("join-jam")
-    .setDescription("Join a game jam");
+export class JoinJamSubcommand extends Subcommand {
+  readonly data = new SlashCommandSubcommandBuilder().setName("join").setDescription("Join a game jam");
 
   constructor(private readonly participation: ParticipationService) {
     super();
