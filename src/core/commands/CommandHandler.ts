@@ -33,7 +33,7 @@ export class CommandHandler {
       }
       // we index the handler inside the context i am so sorry for my sins
       const context = new CommandContext(interaction, this);
-      this.run(context, command);
+      await this.run(context, command);
     } catch (error) {
       await this.errors.handle(error, interaction);
     }
