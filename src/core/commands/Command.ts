@@ -23,6 +23,9 @@ export abstract class Command implements CommandPolicy {
     this.data.addSubcommand(subcommand.data);
     this.subcommands.register(subcommand);
   }
+  getSubcommand(name: string) {
+    return this.subcommands.get(name);
+  }
   addSubcommandGroup(subcommandGroup: SubcommandGroup) {
     if (!(this.data instanceof SlashCommandBuilder)) {
       throw new CommandError("Subcommand groups are not supported for this command", "SUBCOMMAND_GROUP_DENIED");
@@ -30,23 +33,8 @@ export abstract class Command implements CommandPolicy {
     this.data.addSubcommandGroup(subcommandGroup.data);
     this.subcommandGroups.register(subcommandGroup);
   }
-  async dispatch(context: CommandContext): Promise<void> {
-    const subcommandGroup = context.options.getSubcommandGroup(false);
-    if (subcommandGroup) {
-      const group = this.subcommandGroups.get(subcommandGroup);
-      if (!group) throw new CommandError("Subcommand group not found", "SUBCOMMAND_GROUP_NOT_FOUND");
-      context.subcommandGroup = subcommandGroup;
-      await context.handler.run(context, group);
-      return;
-    }
-    const subcommand = context.options.getSubcommand(false);
-    if (subcommand) {
-      const cmd = this.subcommands.get(subcommand);
-      if (!cmd) throw new CommandError("Subcommand not found", "SUBCOMMAND_NOT_FOUND");
-      context.subcommand = subcommand;
-      await context.handler.run(context, cmd);
-      return;
-    }
+  getSubcommandGroup(name: string) {
+    return this.subcommandGroups.get(name);
   }
   abstract execute(context: CommandContext): Promise<void>;
 }

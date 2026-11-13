@@ -26,27 +26,31 @@ export class CommandHandler {
 
   async handle(interaction: ChatInputCommandInteraction): Promise<void> {
     try {
-      const command = this.registry.get(interaction.commandName);
+      const context = new CommandContext(interaction);
+      context.subcommandGroup = interaction.options.getSubcommandGroup(false) ?? undefined;
+      context.subcommand = interaction.options.getSubcommand(false) ?? undefined;
+
+      let command: Command | Subcommand | undefined = this.registry.get(interaction.commandName);
+      if (context.subcommandGroup) {
+        const group = command?.getSubcommandGroup(context.subcommandGroup);
+        command = group?.getSubcommand(context.subcommand ?? "");
+      } else if (context.subcommand) {
+        command = command?.getSubcommand(context.subcommand);
+      }
       if (!command) {
         this.logger.warn("Unknown command", { command: interaction.commandName });
         throw new CommandError("This command is currently unavailable.", "UNKNOWN_COMMAND");
       }
-      // we index the handler inside the context i am so sorry for my sins
-      const context = new CommandContext(interaction, this);
-      await this.run(context, command);
+      const result = await this.guards.run(command.guards ?? [], context);
+      if (!result.allowed) throw new CommandError(result.message ?? "You cannot use this command.", "GUARD_DENIED");
+
+      const remaining = this.cooldowns.acquire(context.name, context.user.id, command.cooldown ?? 0);
+      if (remaining > 0) {
+        throw new CommandError(`Please wait ${Math.ceil(remaining / 1000)} second(s) before using this command again.`, "COOLDOWN");
+      }
+      await this.middleware.run(context, () => command.execute(context));
     } catch (error) {
       await this.errors.handle(error, interaction);
     }
-  }
-
-  async run(context: CommandContext, command: Command | SubcommandGroup | Subcommand): Promise<void> {
-    const result = await this.guards.run(command.guards ?? [], context);
-    if (!result.allowed) throw new CommandError(result.message ?? "You cannot use this command.", "GUARD_DENIED");
-
-    const remaining = this.cooldowns.acquire(context.name, context.user.id, command.cooldown ?? 0);
-    if (remaining > 0) {
-      throw new CommandError(`Please wait ${Math.ceil(remaining / 1000)} second(s) before using this command again.`, "COOLDOWN");
-    }
-    await this.middleware.run(context, () => command.execute(context));
   }
 }

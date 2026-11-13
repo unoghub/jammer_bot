@@ -15,7 +15,5 @@ export class JamCommand extends Command {
     this.addSubcommand(leaveJamSubcommand);
   }
 
-  async execute(context: CommandContext): Promise<void> {
-    await this.dispatch(context);
-  }
+  async execute(context: CommandContext): Promise<void> {}
 }

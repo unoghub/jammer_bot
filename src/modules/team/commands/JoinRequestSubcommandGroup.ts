@@ -15,12 +15,27 @@ export class JoinRequestAcceptSubcommand extends Subcommand {
     .setName("accept")
     .setDescription("Accept a join request")
     .addUserOption((option) => option.setName("user").setDescription("The user to accept").setRequired(true));
+  override readonly guards;
 
-  constructor(private readonly membershipRequest: MembershipRequestService) {
+  constructor(
+    private readonly team: TeamService,
+    private readonly membershipRequest: MembershipRequestService,
+    teamOwnerGuard: TeamOwnerGuard,
+  ) {
     super();
+    this.guards = [teamOwnerGuard];
   }
 
   async execute(context: TeamRequestContext): Promise<void> {
+    await context.defer(true);
+    const target_user = context.interaction.options.getUser("user", true);
+    console.log(target_user.username);
+    const membershipState = await this.team.fetchMembershipFromUser(context.user.id);
+
+    if (membershipState === null) {
+      await context.editReply("You are not a member of any team.");
+      return;
+    }
     const result = await this.membershipRequest.accept(context.targetUser.id, context.membership.teamId);
     switch (result.status) {
       case "not_found":
@@ -42,12 +57,27 @@ export class JoinRequestDenySubcommand extends Subcommand {
     .setName("deny")
     .setDescription("Deny a join request")
     .addUserOption((option) => option.setName("user").setDescription("The user to deny").setRequired(true));
+  override readonly guards;
 
-  constructor(private readonly membershipRequest: MembershipRequestService) {
+  constructor(
+    private readonly team: TeamService,
+    private readonly membershipRequest: MembershipRequestService,
+    teamOwnerGuard: TeamOwnerGuard,
+  ) {
     super();
+    this.guards = [teamOwnerGuard];
   }
 
   async execute(context: TeamRequestContext): Promise<void> {
+    await context.defer(true);
+    const target_user = context.interaction.options.getUser("user", true);
+    console.log(target_user.username);
+    const membershipState = await this.team.fetchMembershipFromUser(context.user.id);
+
+    if (membershipState === null) {
+      await context.editReply("You are not a member of any team.");
+      return;
+    }
     const result = await this.membershipRequest.deny(context.targetUser.id, context.membership.teamId);
     switch (result.status) {
       case "not_found":
@@ -66,32 +96,12 @@ export class JoinRequestDenySubcommand extends Subcommand {
 @injectable()
 export class JoinRequestSubcommandGroup extends SubcommandGroup {
   readonly data = new SlashCommandSubcommandGroupBuilder().setName("request").setDescription("request");
-  override readonly guards;
 
-  constructor(
-    private readonly requestDenyCommand: JoinRequestDenySubcommand,
-    private readonly requestAcceptCommand: JoinRequestAcceptSubcommand,
-    private readonly teamOwnerGuard: TeamOwnerGuard,
-    private readonly team: TeamService,
-  ) {
+  constructor(requestDenyCommand: JoinRequestDenySubcommand, requestAcceptCommand: JoinRequestAcceptSubcommand) {
     super();
     this.addSubcommand(requestDenyCommand);
     this.addSubcommand(requestAcceptCommand);
-    this.guards = [teamOwnerGuard];
   }
 
-  async execute(context: CommandContext): Promise<void> {
-    await context.defer(true);
-    const target_user = context.interaction.options.getUser("user", true);
-    console.log(target_user.username);
-    const membershipState = await this.team.fetchMembershipFromUser(context.user.id);
-
-    if (membershipState === null) {
-      await context.editReply("You are not a member of any team.");
-      return;
-    }
-
-    const requestContext: TeamRequestContext = Object.assign(context, { targetUser: target_user, membership: membershipState });
-    await this.dispatch(context);
-  }
+  async execute(): Promise<void> {}
 }

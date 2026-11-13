@@ -4,6 +4,7 @@ import { MembershipRequestService } from "../services/MembershipRequestService";
 import { ParticipantGuard } from "../../jam/guards/ParticipantGuard";
 import type { CommandContext } from "../../../core/commands/CommandContext";
 import { Subcommand } from "../../../core/commands/Subcommand";
+import type { Guard } from "../../../core/guards/Guard";
 
 @injectable()
 export class JoinTeamSubcommand extends Subcommand {

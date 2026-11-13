@@ -2,10 +2,7 @@ import type { ChatInputCommandInteraction, InteractionEditReplyOptions, Interact
 import type { CommandHandler } from "./CommandHandler";
 
 export class CommandContext {
-  constructor(
-    public readonly interaction: ChatInputCommandInteraction,
-    readonly handler: CommandHandler,
-  ) {
+  constructor(public readonly interaction: ChatInputCommandInteraction) {
     this.command = interaction.commandName;
   }
   private command: string;

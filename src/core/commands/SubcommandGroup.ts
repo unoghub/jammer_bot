@@ -7,24 +7,14 @@ import { SubcommandRegistry } from "./SubcommandRegistry";
 import { CommandError } from "../errors/CommandError";
 import { CommandHandler } from "./CommandHandler";
 
-export abstract class SubcommandGroup implements CommandPolicy {
+export abstract class SubcommandGroup {
   abstract readonly data: SlashCommandSubcommandGroupBuilder;
-  readonly guards?: readonly Guard[];
-  readonly cooldown?: number;
   readonly subcommands = new SubcommandRegistry();
   addSubcommand(subcommand: Subcommand) {
     this.data.addSubcommand(subcommand.data);
     this.subcommands.register(subcommand);
   }
-  async dispatch(context: CommandContext): Promise<void> {
-    const subcommand = context.options.getSubcommand(false);
-    if (subcommand) {
-      const cmd = this.subcommands.get(subcommand);
-      if (!cmd) throw new CommandError("Subcommand not found", "SUBCOMMAND_NOT_FOUND");
-      context.subcommand = subcommand;
-      await context.handler.run(context, cmd);
-      return;
-    }
+  getSubcommand(name: string) {
+    return this.subcommands.get(name);
   }
-  abstract execute(context: CommandContext): Promise<void>;
 }
