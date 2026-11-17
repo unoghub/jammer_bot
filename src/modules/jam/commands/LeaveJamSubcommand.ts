@@ -3,6 +3,7 @@ import type { CommandContext } from "../../../core/commands/CommandContext";
 import { injectable } from "tsyringe";
 import { ParticipationService } from "../services/ParticipationService";
 import { Subcommand } from "../../../core/commands/Subcommand";
+import { CommandError } from "../../../core/errors/CommandError";
 
 @injectable()
 export class LeaveJamSubcommand extends Subcommand {
@@ -15,14 +16,20 @@ export class LeaveJamSubcommand extends Subcommand {
   async execute(context: CommandContext): Promise<void> {
     await context.defer(true);
     const result = await this.participation.removeParticipant(context.interaction.user);
-    if (result) {
-      await context.editReply({
-        content: "You have successfully left the jam!",
-      });
-    } else {
-      await context.editReply({
-        content: "You are not registered as a participant.",
-      });
+    // TODO: add confirmation prompt here
+    switch (result) {
+      case "success":
+        await context.editReply({
+          content: "You have successfully left the jam!",
+        });
+        return;
+      case "not_registered":
+        await context.editReply({
+          content: "You are not registered for the jam!",
+        });
+        return;
+      default:
+        throw new CommandError("Unexpected result from removeParticipant");
     }
   }
 }
