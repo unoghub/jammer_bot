@@ -2,7 +2,6 @@ import { injectable } from "tsyringe";
 import { Command } from "../../../core/commands/Command";
 import { SlashCommandBuilder } from "discord.js";
 import { JoinJamSubcommand } from "./JoinJamSubcommand";
-import type { CommandContext } from "../../../core/commands/CommandContext";
 import { LeaveJamSubcommand } from "./LeaveJamSubcommand";
 
 @injectable()
@@ -15,5 +14,5 @@ export class JamCommand extends Command {
     this.addSubcommand(leaveJamSubcommand);
   }
 
-  async execute(context: CommandContext): Promise<void> {}
+  async execute(): Promise<void> {}
 }

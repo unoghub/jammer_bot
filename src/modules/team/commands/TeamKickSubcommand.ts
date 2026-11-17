@@ -1,7 +1,6 @@
 import { injectable } from "tsyringe";
 import { SlashCommandSubcommandBuilder } from "discord.js";
 import { TeamService } from "../services/TeamService";
-import { MembershipRequestService } from "../services/MembershipRequestService";
 import { TeamOwnerGuard } from "../guards/teamOwnerGuard";
 import type { CommandContext } from "../../../core/commands/CommandContext";
 import { Subcommand } from "../../../core/commands/Subcommand";

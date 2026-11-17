@@ -2,11 +2,9 @@ import { injectable } from "tsyringe";
 import { Command } from "../../../core/commands/Command";
 import { SlashCommandBuilder } from "discord.js";
 import { JoinTeamSubcommand } from "./JoinTeamSubcommand";
-import type { CommandContext } from "../../../core/commands/CommandContext";
-import { ParticipantGuard } from "../../jam/guards/ParticipantGuard";
 import { CreateTeamSubcommand } from "./CreateTeamSubcommand";
 import { TeamKickSubcommand } from "./TeamKickSubcommand";
-import type { JoinRequestSubcommandGroup } from "./JoinRequestSubcommandGroup";
+import { JoinRequestSubcommandGroup } from "./JoinRequestSubcommandGroup";
 
 @injectable()
 export class TeamCommand extends Command {
@@ -25,5 +23,5 @@ export class TeamCommand extends Command {
     this.addSubcommand(teamKickCommand);
   }
 
-  async execute(context: CommandContext): Promise<void> {}
+  async execute(): Promise<void> {}
 }
