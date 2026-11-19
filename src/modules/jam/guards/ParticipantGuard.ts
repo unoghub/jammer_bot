@@ -8,7 +8,7 @@ import { ParticipationService } from "../services/ParticipationService.ts";
 export class ParticipantGuard implements Guard {
   constructor(private readonly participation: ParticipationService) {}
   async check(context: CommandContext): Promise<GuardResult> {
-    if (await this.participation.fetchParticipant(context.user)) {
+    if (await this.participation.fetchParticipant(context.user.id)) {
       return {
         allowed: true,
       };

@@ -1,10 +1,6 @@
-import type { User } from "discord.js";
 import { injectable } from "tsyringe";
 import { DatabaseService } from "../../../infrastructure/database/DatabaseService";
-import {
-  jamTeamMemberRequests,
-  jamTeamMembers,
-} from "../../../infrastructure/database/schema";
+import { jamTeamMemberRequests, jamTeamMembers } from "../../../infrastructure/database/schema";
 import { CommandError } from "../../../core/errors/CommandError";
 import { and, DrizzleQueryError, eq, lt, sql } from "drizzle-orm";
 import { LibsqlError } from "@libsql/client";
@@ -12,21 +8,18 @@ import { LibsqlError } from "@libsql/client";
 @injectable()
 export class MembershipRequestService {
   constructor(private readonly db: DatabaseService) {}
-  async request(user: User, team: string): Promise<void> {
+  async request(userId: string, team: string): Promise<void> {
     const db = this.db.db;
 
     const [membership] = await db
       .select({ teamId: jamTeamMembers.teamId })
       .from(jamTeamMembers)
-      .where(eq(jamTeamMembers.userId, user.id))
+      .where(eq(jamTeamMembers.userId, userId))
       .limit(1);
 
     if (membership) {
       if (membership.teamId === team) {
-        throw new CommandError(
-          "You are already a member of this team.",
-          "ALREADY_MEMBER",
-        );
+        throw new CommandError("You are already a member of this team.", "ALREADY_MEMBER");
       }
 
       throw new CommandError(
@@ -41,7 +34,7 @@ export class MembershipRequestService {
     const result = await db
       .insert(jamTeamMemberRequests)
       .values({
-        userId: user.id,
+        userId: userId,
         teamId: team,
         type: "request",
         createdAt: creationDate,
@@ -77,10 +70,7 @@ export class MembershipRequestService {
       });
 
     if (result.length === 0) {
-      throw new CommandError(
-        "You have already requested to join this team.",
-        "ALREADY_REQUESTED",
-      );
+      throw new CommandError("You have already requested to join this team.", "ALREADY_REQUESTED");
     }
   }
 
@@ -126,23 +116,16 @@ export class MembershipRequestService {
         await tx
           .delete(jamTeamMemberRequests)
           .where(
-            and(
-              eq(jamTeamMemberRequests.userId, userId),
-              eq(jamTeamMemberRequests.teamId, teamId),
-            ),
+            and(eq(jamTeamMemberRequests.userId, userId), eq(jamTeamMemberRequests.teamId, teamId)),
           );
 
         return { status: "expired" } as const;
       }
 
-      await tx
-        .delete(jamTeamMemberRequests)
-        .where(eq(jamTeamMemberRequests.userId, userId));
+      await tx.delete(jamTeamMemberRequests).where(eq(jamTeamMemberRequests.userId, userId));
 
       if (action === "accept") {
-        await tx
-          .insert(jamTeamMembers)
-          .values({ userId: request.userId, teamId: teamId });
+        await tx.insert(jamTeamMembers).values({ userId: request.userId, teamId: teamId });
 
         return { status: "accepted" };
       }

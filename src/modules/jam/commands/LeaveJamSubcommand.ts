@@ -7,7 +7,9 @@ import { CommandError } from "../../../core/errors/CommandError";
 
 @injectable()
 export class LeaveJamSubcommand extends Subcommand {
-  readonly data = new SlashCommandSubcommandBuilder().setName("leave").setDescription("Leave the game jam");
+  readonly data = new SlashCommandSubcommandBuilder()
+    .setName("leave")
+    .setDescription("Leave the game jam");
 
   constructor(private readonly participation: ParticipationService) {
     super();
@@ -15,7 +17,7 @@ export class LeaveJamSubcommand extends Subcommand {
 
   async execute(context: CommandContext): Promise<void> {
     await context.defer(true);
-    const result = await this.participation.removeParticipant(context.interaction.user);
+    const result = await this.participation.removeParticipant(context.interaction.user.id);
     // TODO: add confirmation prompt here
     switch (result) {
       case "success":

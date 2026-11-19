@@ -7,7 +7,10 @@ import { eq } from "drizzle-orm";
 @injectable()
 export class ParticipationService {
   constructor(private readonly db: DatabaseService) {}
-  async createParticipant(userId: string, data?: { name?: string; join_date?: Date; bio?: string }): Promise<"success" | "already_registered"> {
+  async createParticipant(
+    userId: string,
+    data?: { name?: string; join_date?: Date; bio?: string },
+  ): Promise<"success" | "already_registered"> {
     const db = this.db.db;
 
     const participant = await db
@@ -25,16 +28,24 @@ export class ParticipationService {
     return participant ? "success" : "already_registered";
   }
 
-  async removeParticipant(user: User): Promise<"success" | "not_registered"> {
+  async removeParticipant(userId: string): Promise<"success" | "not_registered"> {
     const db = this.db.db;
 
-    const deleted = await db.delete(jamParticipants).where(eq(jamParticipants.userId, user.id)).returning({ id: jamParticipants.userId }).get();
+    const deleted = await db
+      .delete(jamParticipants)
+      .where(eq(jamParticipants.userId, userId))
+      .returning({ id: jamParticipants.userId })
+      .get();
 
     return deleted ? "success" : "not_registered";
   }
 
-  async fetchParticipant(user: User): Promise<Record<string, any> | null> {
-    const result = await this.db.db.select().from(jamParticipants).where(eq(jamParticipants.userId, user.id)).get();
+  async fetchParticipant(userId: string): Promise<Record<string, any> | null> {
+    const result = await this.db.db
+      .select()
+      .from(jamParticipants)
+      .where(eq(jamParticipants.userId, userId))
+      .get();
 
     return result ?? null;
   }
