@@ -3,7 +3,7 @@ import { injectable } from "tsyringe";
 import { DatabaseService } from "../../../infrastructure/database/DatabaseService";
 import { jamTeamMembers, jamTeams } from "../../../infrastructure/database/schema";
 import { CommandError } from "../../../core/errors/CommandError";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 export type TeamMembershipState = {
   userId: string;
@@ -72,7 +72,10 @@ export class TeamService {
   async removeTeamMember(userId: string): Promise<void> {
     const db = this.db.db;
 
-    const result = await db.delete(jamTeamMembers).where(eq(jamTeamMembers.userId, userId)).returning({ userId: jamTeamMembers.userId });
+    const result = await db
+      .delete(jamTeamMembers)
+      .where(eq(jamTeamMembers.userId, userId))
+      .returning({ userId: jamTeamMembers.userId });
 
     if (result.length === 0) {
       throw new CommandError("User is not a member of any team", "USER_NOT_MEMBER");
@@ -83,7 +86,11 @@ export class TeamService {
   async fetchMembershipFromUser(userId: string): Promise<TeamMembershipState | null> {
     const db = this.db.db;
 
-    const [result] = await db.select().from(jamTeamMembers).where(eq(jamTeamMembers.userId, userId)).limit(1);
+    const [result] = await db
+      .select()
+      .from(jamTeamMembers)
+      .where(eq(jamTeamMembers.userId, userId))
+      .limit(1);
 
     return result ?? null;
   }

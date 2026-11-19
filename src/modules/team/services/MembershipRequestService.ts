@@ -11,6 +11,7 @@ export class MembershipRequestService {
   async request(userId: string, team: string): Promise<void> {
     const db = this.db.db;
 
+    // TODO: you're directly querying a table related to ream membership on a service meant for requests, maybe query from TeamService instead of here?
     const [membership] = await db
       .select({ teamId: jamTeamMembers.teamId })
       .from(jamTeamMembers)

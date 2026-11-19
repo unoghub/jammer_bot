@@ -3,16 +3,27 @@ import type { CommandContext } from "../../../core/commands/CommandContext";
 import { injectable } from "tsyringe";
 import { TeamService } from "../services/TeamService";
 import { Subcommand } from "../../../core/commands/Subcommand";
+import { ParticipantGuard } from "../../jam/guards/ParticipantGuard";
 
 @injectable()
 export class CreateTeamSubcommand extends Subcommand {
   readonly data = new SlashCommandSubcommandBuilder()
     .setName("create")
     .setDescription("Creates a new team with the specified name and members.")
-    .addStringOption((option) => option.setName("team_name").setDescription("The name of the team to create.").setRequired(true));
+    .addStringOption((option) =>
+      option
+        .setName("team_name")
+        .setDescription("The name of the team to create.")
+        .setRequired(true),
+    );
+  override readonly guards;
 
-  constructor(private readonly team: TeamService) {
+  constructor(
+    private readonly team: TeamService,
+    participantGuard: ParticipantGuard,
+  ) {
     super();
+    this.guards = [participantGuard];
   }
 
   async execute(context: CommandContext): Promise<void> {
