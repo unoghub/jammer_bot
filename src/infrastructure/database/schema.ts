@@ -1,10 +1,5 @@
 import { sql } from "drizzle-orm";
-import {
-  primaryKey,
-  integer,
-  sqliteTable,
-  text,
-} from "drizzle-orm/sqlite-core";
+import { primaryKey, integer, sqliteTable, text, check } from "drizzle-orm/sqlite-core";
 
 export const guildSettings = sqliteTable("guild_settings", {
   guildId: text("guild_id").primaryKey(),
@@ -21,10 +16,19 @@ export const jamParticipants = sqliteTable("jam_participants", {
   joinedAt: integer("joined_at", { mode: "timestamp" }),
 });
 
-export const jamTeams = sqliteTable("jam_teams", {
-  teamId: text("team_id").primaryKey(),
-  createdAt: integer("created_at", { mode: "timestamp" }),
-});
+export const jamTeams = sqliteTable(
+  "jam_teams",
+  {
+    teamId: text("team_id").primaryKey(),
+    createdAt: integer("created_at", { mode: "timestamp" }),
+  },
+  (table) => [
+    check(
+      "team_id_valid",
+      sql`${table.teamId} <> '' AND ${table.teamId} NOT GLOB '*[^a-zA-Z0-9_-]*'`,
+    ),
+  ],
+);
 
 export const jamTeamChannels = sqliteTable("jam_team_channels", {
   channelId: text("channel_id").primaryKey(),

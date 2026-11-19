@@ -15,6 +15,20 @@
       "when": 1793540612568,
       "tag": "0001_amused_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794954510748,
+      "tag": "0002_check_membership_for_team_join_requests",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1795053920434,
+      "tag": "0003_complete_pet_avengers",
+      "breakpoints": true
     }
   ]
 }
