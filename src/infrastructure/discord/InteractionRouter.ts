@@ -8,5 +8,6 @@ export class InteractionRouter {
 
   async route(interaction: Interaction): Promise<void> {
     if (interaction.isChatInputCommand()) await this.commands.handle(interaction);
+    else if (interaction.isAutocomplete()) await this.commands.autocomplete(interaction);
   }
 }

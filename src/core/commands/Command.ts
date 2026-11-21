@@ -9,6 +9,7 @@ import type { SubcommandGroup } from "./SubcommandGroup.ts";
 import { CommandError } from "../errors/CommandError.ts";
 import { CommandHandler } from "./CommandHandler.ts";
 import { injectable } from "tsyringe";
+import type { AutocompleteContext } from "./AutocompleteContext.ts";
 
 export abstract class Command implements CommandPolicy {
   abstract readonly data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
@@ -28,7 +29,10 @@ export abstract class Command implements CommandPolicy {
   }
   addSubcommandGroup(subcommandGroup: SubcommandGroup) {
     if (!(this.data instanceof SlashCommandBuilder)) {
-      throw new CommandError("Subcommand groups are not supported for this command", "SUBCOMMAND_GROUP_DENIED");
+      throw new CommandError(
+        "Subcommand groups are not supported for this command",
+        "SUBCOMMAND_GROUP_DENIED",
+      );
     }
     this.data.addSubcommandGroup(subcommandGroup.data);
     this.subcommandGroups.register(subcommandGroup);
@@ -37,4 +41,5 @@ export abstract class Command implements CommandPolicy {
     return this.subcommandGroups.get(name);
   }
   abstract execute(context: CommandContext): Promise<void>;
+  autocomplete?(context: AutocompleteContext): Promise<void>;
 }

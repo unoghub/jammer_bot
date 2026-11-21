@@ -1,11 +1,18 @@
-import type { ChatInputCommandInteraction, InteractionEditReplyOptions, InteractionReplyOptions, MessagePayload } from "discord.js";
+import type {
+  ChatInputCommandInteraction,
+  InteractionEditReplyOptions,
+  InteractionReplyOptions,
+  MessagePayload,
+} from "discord.js";
 import type { CommandHandler } from "./CommandHandler";
 
 export class CommandContext {
   constructor(public readonly interaction: ChatInputCommandInteraction) {
     this.command = interaction.commandName;
+    this.subcommandGroup = interaction.options.getSubcommandGroup(false) ?? undefined;
+    this.subcommand = interaction.options.getSubcommand(false) ?? undefined;
   }
-  private command: string;
+  public command: string;
   public subcommandGroup?: string;
   public subcommand?: string;
 
