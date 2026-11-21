@@ -48,38 +48,46 @@ export class TeamService {
     return data.name;
   }
 
-  async addTeamMember(user: User, teamId: string, owner: boolean = false): Promise<void> {
+  async addTeamMember(
+    userId: string,
+    teamId: string,
+    owner: boolean = false,
+  ): Promise<"success" | "already_member"> {
     const db = this.db.db;
 
     const result = await db
       .insert(jamTeamMembers)
       .values({
         teamId,
-        userId: user.id,
+        userId: userId,
         isOwner: owner,
       })
       .onConflictDoNothing({ target: jamTeamMembers.userId })
       .returning({
         userId: jamTeamMembers.userId,
         teamId: jamTeamMembers.teamId,
-      });
+      })
+      .get();
 
-    if (result.length === 0) {
-      throw new CommandError("User is already a member of this team", "USER_ALREADY_MEMBER");
-    }
+    return result ? "success" : "already_member";
   }
 
-  async removeTeamMember(userId: string): Promise<void> {
+  async removeTeamMember(userId: string): Promise<"success" | "not_member" | "team_deleted"> {
     const db = this.db.db;
+
+    const membership = await this.fetchMembershipFromUser(userId);
+    if (membership?.isOwner) {
+      await db.delete(jamTeams).where(eq(jamTeams.teamId, membership.teamId));
+      return "team_deleted";
+    }
 
     const result = await db
       .delete(jamTeamMembers)
       .where(eq(jamTeamMembers.userId, userId))
-      .returning({ userId: jamTeamMembers.userId });
+      .returning({ userId: jamTeamMembers.userId })
+      .get();
 
-    if (result.length === 0) {
-      throw new CommandError("User is not a member of any team", "USER_NOT_MEMBER");
-    }
+    return result ? "success" : "not_member";
   }
 
   // TODO : cache this query (well, you should probably cache most queries but this is more important), see TeamService::isTeamOwner().
@@ -100,5 +108,13 @@ export class TeamService {
   async isTeamOwner(userId: string): Promise<boolean> {
     const result = await this.fetchMembershipFromUser(userId);
     return result?.isOwner ?? false;
+  }
+
+  async getTeams(): Promise<string[]> {
+    const db = this.db.db;
+
+    const results = await db.select().from(jamTeams).$withCache();
+
+    return results.map((row) => row.teamId);
   }
 }

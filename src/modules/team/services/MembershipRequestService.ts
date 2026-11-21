@@ -4,22 +4,21 @@ import { jamTeamMemberRequests, jamTeamMembers } from "../../../infrastructure/d
 import { CommandError } from "../../../core/errors/CommandError";
 import { and, DrizzleQueryError, eq, lt, sql } from "drizzle-orm";
 import { LibsqlError } from "@libsql/client";
+import { TeamService } from "./TeamService";
 
 @injectable()
 export class MembershipRequestService {
-  constructor(private readonly db: DatabaseService) {}
-  async request(userId: string, team: string): Promise<void> {
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly team: TeamService,
+  ) {}
+  async request(userId: string, teamId: string): Promise<void> {
     const db = this.db.db;
 
-    // TODO: you're directly querying a table related to ream membership on a service meant for requests, maybe query from TeamService instead of here?
-    const [membership] = await db
-      .select({ teamId: jamTeamMembers.teamId })
-      .from(jamTeamMembers)
-      .where(eq(jamTeamMembers.userId, userId))
-      .limit(1);
+    const membership = await this.team.fetchMembershipFromUser(userId);
 
     if (membership) {
-      if (membership.teamId === team) {
+      if (membership.teamId === teamId) {
         throw new CommandError("You are already a member of this team.", "ALREADY_MEMBER");
       }
 
@@ -36,7 +35,7 @@ export class MembershipRequestService {
       .insert(jamTeamMemberRequests)
       .values({
         userId: userId,
-        teamId: team,
+        teamId: teamId,
         type: "request",
         createdAt: creationDate,
         expiresAt: expirationDate,
@@ -126,20 +125,25 @@ export class MembershipRequestService {
       await tx.delete(jamTeamMemberRequests).where(eq(jamTeamMemberRequests.userId, userId));
 
       if (action === "accept") {
-        await tx.insert(jamTeamMembers).values({ userId: request.userId, teamId: teamId });
-
-        return { status: "accepted" };
+        return { status: "accepted" } as const;
       }
 
-      return { status: "denied" };
+      return { status: "denied" } as const;
     });
   }
 
   async accept(
     userId: string,
     teamId: string,
-  ): Promise<{ status: "not_found" | "expired" | "accepted" }> {
-    return this.handleRequest(userId, teamId, "accept");
+  ): Promise<{ status: "not_found" | "expired" | "accepted" | "already_member" }> {
+    const result = await this.handleRequest(userId, teamId, "accept");
+    if (result.status === "accepted") {
+      const r = await this.team.addTeamMember(userId, teamId);
+      if (r === "already_member") {
+        return { status: "already_member" };
+      }
+    }
+    return result;
   }
 
   async deny(

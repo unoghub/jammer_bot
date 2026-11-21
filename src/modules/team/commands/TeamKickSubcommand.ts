@@ -10,7 +10,9 @@ export class TeamKickSubcommand extends Subcommand {
   readonly data = new SlashCommandSubcommandBuilder()
     .setName("kick")
     .setDescription("Kick a member from your team")
-    .addUserOption((option) => option.setName("member").setDescription("The member to kick").setRequired(true));
+    .addUserOption((option) =>
+      option.setName("member").setDescription("The member to kick").setRequired(true),
+    );
   override readonly guards;
 
   constructor(
@@ -23,9 +25,14 @@ export class TeamKickSubcommand extends Subcommand {
 
   override async execute(context: CommandContext): Promise<void> {
     const targetMember = context.interaction.options.getUser("member", true);
-    const ownerMembership = await this.team.fetchMembershipFromUser(context.interaction.user.id);
+    const ownerMembership = await this.team.fetchMembershipFromUser(context.user.id);
+    // might put a required clause for fetchMembership
     if (ownerMembership === null) {
       await context.editReply("You are not a member of any team.");
+      return;
+    }
+    if (targetMember.id == context.user.id) {
+      await context.editReply("You cannot kick yourself from the team.");
       return;
     }
     const userMembership = await this.team.fetchMembershipFromUser(targetMember.id);

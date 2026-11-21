@@ -54,6 +54,8 @@ export class JoinRequestAcceptSubcommand extends Subcommand {
       case "expired":
         await context.editReply("The user's request to join your team has expired.");
         return;
+      case "already_member":
+        await context.editReply("This user is already a member of another team.");
     }
   }
 }
