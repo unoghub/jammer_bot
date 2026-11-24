@@ -3,7 +3,7 @@ import { injectable } from "tsyringe";
 import { DatabaseService } from "../../../infrastructure/database/DatabaseService";
 import { jamTeamMembers, jamTeams } from "../../../infrastructure/database/schema";
 import { CommandError } from "../../../core/errors/CommandError";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 export type TeamMembershipState = {
   userId: string;
@@ -116,5 +116,34 @@ export class TeamService {
     const results = await db.select().from(jamTeams).$withCache();
 
     return results.map((row) => row.teamId);
+  }
+
+  async getOwnerfromTeam(teamId: string): Promise<TeamMembershipState | null> {
+    const db = this.db.db;
+
+    const result = await db
+      .select()
+      .from(jamTeamMembers)
+      .where(and(eq(jamTeamMembers.teamId, teamId), eq(jamTeamMembers.isOwner, true)))
+      .limit(1)
+      .get();
+
+    return result ?? null;
+  }
+
+  async setOwner(teamId: string, id: string): Promise<void> {
+    const db = this.db.db;
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(jamTeamMembers)
+        .set({ isOwner: false })
+        .where(and(eq(jamTeamMembers.teamId, teamId), eq(jamTeamMembers.isOwner, true)));
+
+      await tx
+        .update(jamTeamMembers)
+        .set({ isOwner: true })
+        .where(and(eq(jamTeamMembers.teamId, teamId), eq(jamTeamMembers.userId, id)));
+    });
   }
 }
