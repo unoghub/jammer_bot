@@ -1,17 +1,10 @@
 import { injectable } from "tsyringe";
 import { SubcommandGroup } from "../../../core/commands/SubcommandGroup";
-import {
-  SlashCommandSubcommandBuilder,
-  SlashCommandSubcommandGroupBuilder,
-  User,
-} from "discord.js";
+import { SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder } from "discord.js";
 import { CommandContext } from "../../../core/commands/CommandContext";
 import { TeamOwnerGuard } from "../guards/teamOwnerGuard";
 import { Subcommand } from "../../../core/commands/Subcommand";
-import { type TeamMembershipState, TeamService } from "../services/TeamService";
 import { MembershipRequestService } from "../services/MembershipRequestService";
-
-type TeamRequestContext = CommandContext & { targetUser: User; membership: TeamMembershipState };
 
 @injectable()
 export class JoinRequestAcceptSubcommand extends Subcommand {
@@ -24,7 +17,6 @@ export class JoinRequestAcceptSubcommand extends Subcommand {
   override readonly guards;
 
   constructor(
-    private readonly team: TeamService,
     private readonly membershipRequest: MembershipRequestService,
     teamOwnerGuard: TeamOwnerGuard,
   ) {
@@ -32,18 +24,12 @@ export class JoinRequestAcceptSubcommand extends Subcommand {
     this.guards = [teamOwnerGuard];
   }
 
-  async execute(context: TeamRequestContext): Promise<void> {
+  async execute(context: CommandContext): Promise<void> {
     await context.defer(true);
-    const membershipState = await this.team.fetchMembershipFromUser(context.user.id);
+    const targetUser = context.interaction.options.getUser("user", true).id;
+    const membershipState = context.get(TeamOwnerGuard);
 
-    if (membershipState === null) {
-      await context.editReply("You are not a member of any team.");
-      return;
-    }
-    const result = await this.membershipRequest.accept(
-      context.targetUser.id,
-      context.membership.teamId,
-    );
+    const result = await this.membershipRequest.accept(targetUser, membershipState.teamId);
     switch (result.status) {
       case "not_found":
         await context.editReply("The user has not requested to join your team.");
@@ -71,7 +57,6 @@ export class JoinRequestDenySubcommand extends Subcommand {
   override readonly guards;
 
   constructor(
-    private readonly team: TeamService,
     private readonly membershipRequest: MembershipRequestService,
     teamOwnerGuard: TeamOwnerGuard,
   ) {
@@ -79,18 +64,12 @@ export class JoinRequestDenySubcommand extends Subcommand {
     this.guards = [teamOwnerGuard];
   }
 
-  async execute(context: TeamRequestContext): Promise<void> {
+  async execute(context: CommandContext): Promise<void> {
     await context.defer(true);
-    const membershipState = await this.team.fetchMembershipFromUser(context.user.id);
+    const targetUser = context.interaction.options.getUser("user", true).id;
+    const membershipState = context.get(TeamOwnerGuard);
 
-    if (membershipState === null) {
-      await context.editReply("You are not a member of any team.");
-      return;
-    }
-    const result = await this.membershipRequest.deny(
-      context.targetUser.id,
-      context.membership.teamId,
-    );
+    const result = await this.membershipRequest.deny(targetUser, membershipState.teamId);
     switch (result.status) {
       case "not_found":
         await context.editReply("The user has not requested to join your team.");

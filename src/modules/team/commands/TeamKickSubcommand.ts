@@ -23,14 +23,10 @@ export class TeamKickSubcommand extends Subcommand {
     this.guards = [teamOwnerGuard];
   }
 
-  override async execute(context: CommandContext): Promise<void> {
+  async execute(context: CommandContext): Promise<void> {
+    await context.defer(true);
     const targetMember = context.interaction.options.getUser("member", true);
-    const ownerMembership = await this.team.fetchMembershipFromUser(context.user.id);
-    // might put a required clause for fetchMembership
-    if (ownerMembership === null) {
-      await context.editReply("You are not a member of any team.");
-      return;
-    }
+    const ownerMembership = context.get(TeamOwnerGuard);
     if (targetMember.id == context.user.id) {
       await context.editReply("You cannot kick yourself from the team.");
       return;

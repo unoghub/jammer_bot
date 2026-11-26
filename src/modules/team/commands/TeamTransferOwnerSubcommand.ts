@@ -26,6 +26,7 @@ export class TeamTransferOwnerSubcommand extends Subcommand {
   }
 
   async execute(context: CommandContext): Promise<void> {
+    context.defer(true);
     const targetMember = context.interaction.options.getUser("member", true);
     const ownerMembership = await this.team.fetchMembershipFromUser(context.user.id);
     // might put a required clause for fetchMembership

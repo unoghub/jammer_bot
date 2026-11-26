@@ -32,7 +32,7 @@ export class JoinTeamSubcommand extends Subcommand {
 
   async execute(context: CommandContext): Promise<void> {
     await context.defer(true);
-    const team = context.interaction.options.getString("team", true);
+    const team = context.interaction.options.getString("team_name", true);
     await this.membershipRequest.request(context.interaction.user.id, team);
     await context.editReply(
       `Your request to join the team **${team}** has been sent. The team owner will be notified.`,
