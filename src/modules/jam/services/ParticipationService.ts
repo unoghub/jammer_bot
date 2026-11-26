@@ -1,8 +1,14 @@
-import type { User } from "discord.js";
 import { injectable } from "tsyringe";
 import { DatabaseService } from "../../../infrastructure/database/DatabaseService";
 import { jamParticipants } from "../../../infrastructure/database/schema";
 import { eq } from "drizzle-orm";
+
+export type ParticipantData = {
+  userId: string;
+  name: string;
+  bio: string | null;
+  joinedAt: Date | null;
+};
 
 @injectable()
 export class ParticipationService {
@@ -40,7 +46,7 @@ export class ParticipationService {
     return deleted ? "success" : "not_registered";
   }
 
-  async fetchParticipant(userId: string): Promise<Record<string, any> | null> {
+  async fetchParticipant(userId: string): Promise<ParticipantData | null> {
     const result = await this.db.db
       .select()
       .from(jamParticipants)

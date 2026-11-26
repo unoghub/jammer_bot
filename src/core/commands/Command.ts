@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, type SlashCommandOptionsOnlyBuilder } from "discord.js";
-import type { Guard } from "../guards/Guard.ts";
+import type { AnyGuard } from "../guards/Guard.ts";
 import type { CommandContext } from "./CommandContext.ts";
 import type { CommandPolicy } from "./types.ts";
 import { SubcommandRegistry } from "./SubcommandRegistry.ts";
@@ -7,13 +7,11 @@ import { SubcommandGroupRegistry } from "./SubcommandGroupRegistry.ts";
 import type { Subcommand } from "./Subcommand.ts";
 import type { SubcommandGroup } from "./SubcommandGroup.ts";
 import { CommandError } from "../errors/CommandError.ts";
-import { CommandHandler } from "./CommandHandler.ts";
-import { injectable } from "tsyringe";
 import type { AutocompleteContext } from "./AutocompleteContext.ts";
 
 export abstract class Command implements CommandPolicy {
   abstract readonly data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
-  readonly guards?: readonly Guard[];
+  readonly guards?: readonly AnyGuard[];
   readonly cooldown?: number;
   private readonly subcommands = new SubcommandRegistry();
   private readonly subcommandGroups = new SubcommandGroupRegistry();

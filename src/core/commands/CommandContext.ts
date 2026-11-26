@@ -4,7 +4,7 @@ import type {
   InteractionReplyOptions,
   MessagePayload,
 } from "discord.js";
-import type { CommandHandler } from "./CommandHandler";
+import type { AnyGuard, GuardClass, GuardData } from "../guards/Guard";
 
 export class CommandContext {
   constructor(public readonly interaction: ChatInputCommandInteraction) {
@@ -46,5 +46,18 @@ export class CommandContext {
 
   async followUp(options: string | MessagePayload | InteractionReplyOptions): Promise<void> {
     await this.interaction.followUp(options);
+  }
+
+  private readonly guardData = new Map<GuardClass, unknown>();
+
+  _setGuardData(guard: AnyGuard, data: unknown) {
+    this.guardData.set(guard.constructor as GuardClass, data);
+  }
+
+  get<G extends AnyGuard>(guard: GuardClass<G>): GuardData<G> {
+    if (!this.guardData.has(guard)) {
+      throw new Error(`No data for ${guard.name}. Is it even in this command's guards?`);
+    }
+    return this.guardData.get(guard) as GuardData<G>;
   }
 }

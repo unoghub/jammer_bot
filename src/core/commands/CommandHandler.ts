@@ -11,7 +11,6 @@ import { CommandContext } from "./CommandContext.ts";
 import { CommandRegistry } from "./CommandRegistry.ts";
 import type { Command } from "./Command.ts";
 import type { Subcommand } from "./Subcommand.ts";
-import type { SubcommandGroup } from "./SubcommandGroup.ts";
 import { AutocompleteContext } from "./AutocompleteContext.ts";
 
 @injectable()

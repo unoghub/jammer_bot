@@ -1,7 +1,7 @@
-import type { Guard } from "../guards/Guard.ts";
+import type { AnyGuard } from "../guards/Guard.ts";
 
 export interface CommandPolicy {
-  readonly guards?: readonly Guard[];
+  readonly guards?: readonly AnyGuard[];
   /** Cooldown duration in milliseconds, per user and command. */
   readonly cooldown?: number;
 }
